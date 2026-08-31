@@ -15,11 +15,13 @@ from urllib.request import Request, urlopen
 
 ZERO = Decimal("0")
 HUNDRED = Decimal("100")
-SEC_AGENT = "YouRich/0.2 yourich@example.invalid"
+SEC_AGENT = "YouRich/0.4 research-layer"
 MAX_TICKER_LENGTH = 12
 MARKET_QUOTE_TTL_SECONDS = 900
 FUNDAMENTALS_TTL_SECONDS = 86400
 STALE_FINANCIAL_DAYS = 548
+FILING_METADATA_TTL_SECONDS = 86400
+FILING_DOCUMENT_TTL_SECONDS = 604800
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,7 +132,7 @@ def load_financials(args: argparse.Namespace) -> dict[str, Any]:
 
 def fetch_json(url: str, ttl_seconds: int, cache_key: str) -> dict[str, Any]:
     def load() -> dict[str, Any]:
-        request = Request(url, headers={"User-Agent": SEC_AGENT})
+        request = Request(url, headers={"User-Agent": sec_user_agent()})
         try:
             with urlopen(request, timeout=20) as response:
                 payload = json.loads(response.read().decode("utf-8"))
@@ -160,7 +162,29 @@ def cached_json(
     return payload
 
 
+def fetch_text(url: str, ttl_seconds: int, cache_key: str) -> str:
+    def load() -> dict[str, Any]:
+        request = Request(url, headers={"User-Agent": sec_user_agent()})
+        try:
+            with urlopen(request, timeout=20) as response:
+                return {"text": response.read().decode("utf-8", errors="replace")}
+        except HTTPError as exc:
+            raise ToolError(f"HTTP {exc.code}: {url}") from exc
+        except URLError as exc:
+            raise ToolError(f"network error: {exc.reason}") from exc
+
+    payload = cached_json(cache_key, ttl_seconds, load)
+    text = payload.get("text")
+    if not isinstance(text, str):
+        raise ToolError(f"invalid text payload: {url}")
+    return text
+
+
 def cache_path(cache_key: str) -> Path:
     root = Path(os.environ.get("YOURICH_CACHE_DIR", Path.home() / ".cache" / "yourich"))
     safe_key = cache_key.replace("/", "_").replace(":", "_").replace("?", "_")
     return root / f"{safe_key}.json"
+
+
+def sec_user_agent() -> str:
+    return os.environ.get("YOURICH_SEC_USER_AGENT", SEC_AGENT).strip() or SEC_AGENT

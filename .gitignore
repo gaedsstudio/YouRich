@@ -6,6 +6,7 @@ __pycache__/
 .basedpyright/
 *.pyc
 yr-*.json
+.yourich-live-cache/
 .DS_Store
 .idea/
 .vscode/

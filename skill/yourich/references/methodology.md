@@ -13,7 +13,7 @@ Analysis priority is:
 
 1. Deterministic YouRich data.
 2. Metric evidence and field provenance.
-3. Public qualitative research for claims scripts cannot answer.
+3. SEC filing evidence and other primary public sources for qualitative claims.
 4. Claude Code or Codex interpretation.
 
 ## Evidence States
@@ -30,15 +30,19 @@ state the limitation.
 
 1. Identify the company and ticker.
 2. Fetch financial data and market quote data.
-3. Check `missing_fields`, `field_sources`, `fact_metadata`, `data_quality`,
+3. Fetch recent 10-K and 10-Q filings when the request needs business, risk,
+   management, or thesis work.
+4. Check `missing_fields`, `field_sources`, `fact_metadata`, `data_quality`,
    `data_freshness`, and provider warnings.
-4. Run valuation, quality, and risk scripts.
-5. Gather qualitative public evidence only for claims the scripts cannot answer.
-6. Build bull and bear cases from evidence.
-7. Produce a valuation-oriented conclusion, not an automated trade signal.
+5. Run valuation, quality, and risk scripts.
+6. Build a compact research context from filing sections and selected evidence.
+7. Gather outside public evidence only for claims filings and scripts cannot answer.
+8. Build bull and bear cases from evidence.
+9. Produce a valuation-oriented conclusion, not an automated trade signal.
 
 Treat evidence as one of three kinds:
 
 - `reported_fact`: a value directly selected from SEC Company Facts.
 - `derived_metric`: a deterministic YouRich calculation from reported facts or market quotes.
+- `SEC_FILING`: a selected filing excerpt with accession number and source URL.
 - `qualitative_interpretation`: Claude Code or Codex reasoning from public evidence.

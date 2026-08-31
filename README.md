@@ -2,11 +2,16 @@
 
 Open-source investment research skills for Claude Code and Codex.
 
-Current milestone: v0.3.0 Financial Data Correctness.
+Current milestone: v0.4.0 Research Layer.
 
 YouRich adds a structured fundamental research workflow, deterministic financial
 calculations, delayed market quotes, valuation tools, risk checks, and evidence
 verification to coding agents.
+
+v0.4 adds a filing research layer for SEC 10-K and 10-Q evidence. It fetches
+filing metadata and primary documents, parses key sections, builds compact
+research context, and links qualitative claims to source excerpts before the
+host agent writes an investment thesis.
 
 ## Installation
 
@@ -75,6 +80,8 @@ python scripts/valuation.py --ticker AAPL
 python scripts/financial_health.py --ticker AAPL
 python scripts/risk.py --ticker AAPL
 python scripts/compare.py AAPL MSFT
+python scripts/fetch_filings.py AAPL --form 10-K --form 10-Q --limit 2
+python scripts/research_context.py AAPL --mode thesis
 ```
 
 They emit JSON and use `Decimal` for financial calculations. Agents should not
@@ -94,9 +101,15 @@ Fundamental data is cached for 24 hours. Set `YOURICH_CACHE_DIR` to control the
 cache location. If providers fail, YouRich leaves price-dependent fields `null`
 and records warnings; it never guesses a market price.
 
-v0.3 separates annual, quarterly, TTM, and latest balance-sheet snapshot facts.
-SEC fact metadata records concept, unit, form, filing date, fiscal period,
-accession number, confidence, and best-effort restatement status.
+SEC filing metadata is cached for 24 hours and filing documents are cached for
+seven days. Set `YOURICH_SEC_USER_AGENT` to provide the SEC User-Agent used for
+EDGAR requests. YouRich uses SEC submissions and archive documents as primary
+sources for filing research.
+
+v0.4 preserves v0.3 financial correctness: annual, quarterly, TTM, and latest
+balance-sheet snapshot facts remain separated. SEC fact metadata records
+concept, unit, form, filing date, fiscal period, accession number, confidence,
+and best-effort restatement status.
 
 ## Metrics
 
@@ -109,8 +122,9 @@ dilution, and quantitative risk checks when data exists.
 ## Methodology
 
 The default workflow identifies the company, gathers financial data, normalizes
-it, runs deterministic valuation and risk scripts, verifies claims with
-evidence, builds bull and bear cases, and produces an investment thesis.
+it, fetches filing evidence, runs deterministic valuation and risk scripts,
+verifies claims with evidence, builds bull and bear cases, and produces an
+investment thesis.
 
 ## JSON Format
 
