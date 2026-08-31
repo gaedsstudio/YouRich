@@ -443,7 +443,7 @@ python -m basedpyright
 python -m pytest -q
 ```
 
-当前 v0.3 baseline：**22 tests passing**。
+当前 v0.4 baseline：**35 tests passing**。
 
 ---
 

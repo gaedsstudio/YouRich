@@ -465,7 +465,7 @@ python -m basedpyright
 python -m pytest -q
 ```
 
-현재 v0.3 기준: **22 tests passed**.
+현재 v0.4 기준: **35 tests passed**.
 
 ---
 

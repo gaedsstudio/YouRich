@@ -441,7 +441,7 @@ python -m basedpyright
 python -m pytest -q
 ```
 
-現在の v0.3 baseline: **22 tests passing**.
+現在の v0.4 baseline: **35 tests passing**.
 
 ---
 
