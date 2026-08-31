@@ -1,0 +1,89 @@
+[project]
+name = "yourich"
+version = "0.3.0"
+description = "Open-source investment research skills for Claude Code and Codex."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "YouRich contributors" }]
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.21",
+    "pytest>=8",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.basedpyright]
+typeCheckingMode = "all"
+pythonVersion = "3.11"
+pythonPlatform = "All"
+include = ["skill/yourich/scripts", "tests"]
+extraPaths = ["skill/yourich/scripts"]
+exclude = ["**/__pycache__", "**/.venv", "**/build", "**/dist"]
+reportPrivateUsage = "warning"
+reportAny = false
+reportArgumentType = false
+reportCallInDefaultInitializer = false
+reportExplicitAny = false
+reportImplicitRelativeImport = false
+reportImplicitOverride = false
+reportIndexIssue = false
+reportReturnType = false
+reportUnannotatedClassAttribute = false
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnusedCallResult = false
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["skill/yourich/scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "COM812",
+    "D",
+    "D203",
+    "D213",
+    "EM101",
+    "EM102",
+    "FBT001",
+    "FBT002",
+    "FIX002",
+    "INP001",
+    "ANN401",
+    "ISC001",
+    "PLR0913",
+    "PYI041",
+    "S310",
+    "S603",
+    "T201",
+    "TCH003",
+    "TD002",
+    "TD003",
+    "TRY003",
+    "TRY301",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D", "PLR2004", "S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+filterwarnings = ["error"]
+asyncio_default_fixture_loop_scope = "function"

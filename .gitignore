@@ -1,0 +1,11 @@
+.env
+*.env
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.basedpyright/
+*.pyc
+yr-*.json
+.DS_Store
+.idea/
+.vscode/

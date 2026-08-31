@@ -1,0 +1,13 @@
+{
+  "name": "yourich",
+  "version": "0.1.0",
+  "description": "Open-source investment research skill for Claude Code and Codex.",
+  "author": {
+    "name": "YouRich contributors"
+  },
+  "skills": [
+    {
+      "path": "../../../skill/yourich"
+    }
+  ]
+}

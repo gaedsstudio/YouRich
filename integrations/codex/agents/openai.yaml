@@ -1,0 +1,3 @@
+display_name: YouRich
+short_description: Structured investment research workflow with deterministic valuation, financial quality, risk checks, and evidence rules.
+default_prompt: Use YouRich for public-company investment research, stock valuation, comparison, and financial risk analysis.
