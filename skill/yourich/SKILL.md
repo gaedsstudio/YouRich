@@ -3,8 +3,8 @@ name: yourich
 description: >
   Analyze public companies and stocks using structured fundamental research,
   deterministic valuation scripts, valuation intelligence, SEC filing research,
-  industry and peer research, financial quality checks, risk analysis, official
-  earnings/guidance research, and evidence verification.
+  industry and peer research, thesis tracking, local research memory, financial
+  quality checks, risk analysis, official earnings/guidance research, and evidence verification.
   Use when the user asks to analyze, value, compare, investigate, or research a
   stock or public company as an investment.
 license: MIT
@@ -47,14 +47,16 @@ interpretation.
    `scripts/valuation_intelligence.py`.
 8. For competitor, peer-relative, industry, or "compared with peers" questions,
    run `scripts/peer_research.py`.
-9. Run financial quality checks with `scripts/financial_health.py`.
-10. Run quantitative risk checks with `scripts/risk.py`.
-11. Verify important claims using the evidence rules in
+9. For "what changed since last time", "track this thesis", or research history
+   requests, run `scripts/thesis_tracker.py`.
+10. Run financial quality checks with `scripts/financial_health.py`.
+11. Run quantitative risk checks with `scripts/risk.py`.
+12. Verify important claims using the evidence rules in
    `references/evidence-framework.md`.
-12. Render the authoritative human-readable report with
+13. Render the authoritative human-readable report with
     `python scripts/report.py <ticker> --language <user-language>`.
-13. Use the rendered report as the final presentation source.
-14. Expose raw technical details only when explicitly requested.
+14. Use the rendered report as the final presentation source.
+15. Expose raw technical details only when explicitly requested.
 
 For narrower requests, execute the relevant subset:
 
@@ -78,6 +80,12 @@ For narrower requests, execute the relevant subset:
   recent earnings, guidance, management commentary, and thesis-change questions.
 - `guidance`: use `scripts/earnings_context.py <ticker>` and focus on guidance,
   previous guidance comparison, and company guidance versus actual results.
+- `track`: use `scripts/thesis_tracker.py <ticker> capture` to intentionally
+  save a local research baseline.
+- `update`: use `scripts/thesis_tracker.py <ticker> compare` to compare current
+  research with the latest stored snapshot.
+- `history`: use `scripts/thesis_tracker.py <ticker> history --format markdown`
+  for a compact timeline of stored research snapshots.
 
 ## Deterministic Tools
 
@@ -92,6 +100,10 @@ python scripts/valuation_intelligence.py AMD --discount-rate 10
 python scripts/peer_research.py NVDA
 python scripts/peer_research.py NVDA --peers AMD AVGO INTC
 python scripts/peer_research.py NVDA --format markdown --language ko
+python scripts/thesis_tracker.py NVDA capture
+python scripts/thesis_tracker.py NVDA compare --format markdown --language ko
+python scripts/thesis_tracker.py NVDA history --format markdown
+python scripts/thesis_tracker.py NVDA latest
 python scripts/financial_health.py --ticker AAPL
 python scripts/risk.py --ticker AAPL
 python scripts/report.py AAPL --language en
@@ -175,6 +187,12 @@ investment essay. Use YouRich's report structure, prefer concise tables and
 sections, explain important financial terms in plain language, and keep
 technical basis/provenance available without making it the primary reading
 experience.
+
+For thesis-tracking or "since last analysis" requests, use stored YouRich
+research snapshots from `scripts/thesis_tracker.py`. Do not claim "last time" or
+"we previously said" from Claude/Codex conversation memory unless a stored
+snapshot exists. Full analyses and explicit tracking/update requests may save
+snapshots; narrow metric lookups should not create research checkpoints.
 
 Treat the YouRich rendered report structure as authoritative. Do not discard its
 section ordering and rewrite the analysis as a free-form essay. You may improve

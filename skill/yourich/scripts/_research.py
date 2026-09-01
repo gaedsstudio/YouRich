@@ -54,7 +54,7 @@ def build_research_context(
     claims = research_claims(selected)
     coverage = evidence_coverage(selected)
     context = {
-        "version": "0.7.0",
+        "version": "0.8.0",
         "ticker": ticker,
         "mode": request.mode,
         "filings": [filing.to_dict() for filing in filings],

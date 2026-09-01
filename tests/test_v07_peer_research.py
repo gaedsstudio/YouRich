@@ -190,7 +190,7 @@ def test_peer_research_cli_json_and_markdown(tmp_path: Path) -> None:
         check=True,
     )
 
-    assert json.loads(json_run.stdout)["version"] == "0.7.0"
+    assert json.loads(json_run.stdout)["version"] == "0.8.0"
     assert "## 비교 기업" in markdown_run.stdout
 
 

@@ -15,7 +15,7 @@ from _valuation_history import historical_valuation
 from _valuation_scenarios import classify_position, scenario_valuation
 from valuation import valuation
 
-VERSION: Final = "0.7.0"
+VERSION: Final = "0.8.0"
 WARNING_BY_REVERSE_STATUS: Final = {
     "NO_VALID_FCF": "REVERSE_DCF_NO_VALID_FCF",
     "NO_NUMERICAL_SOLUTION": "REVERSE_DCF_NO_SOLUTION",

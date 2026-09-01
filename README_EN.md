@@ -8,11 +8,11 @@ English | [한국어](README_KO.md) | [日本語](README_JA.md) | [中文](READM
 
 YouRich does not provide its own AI model and it is not a standalone stock app. Claude Code or Codex handles reasoning and qualitative research; YouRich supplies the financial discipline underneath.
 
-**Current milestone: v0.7.0 — Industry & Peer Research**
+**Current milestone: v0.8.0 — Thesis Tracking & Research Memory**
 
-v0.7.0 adds conservative industry classification, peer comparability, relative
-valuation, and premium-justification analysis while preserving valuation
-intelligence and official earnings evidence.
+v0.8.0 adds local research snapshots, deterministic change detection, thesis
+tracking, watch variables, and compact history reports while preserving peer
+research, valuation intelligence, and official earnings evidence.
 
 [Why YouRich?](#why-not-just-ask-ai-directly) · [Architecture](#architecture) · [Capabilities](#capabilities) · [Quick Start](#quick-start) · [Data Correctness](#v030-financial-data-correctness) · [Methodology](#methodology)
 

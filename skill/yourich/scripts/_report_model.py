@@ -11,6 +11,7 @@ from _report_format import (
 )
 from _report_sections import assessment_rows, build_sections
 from _report_text import overall_label, overall_summary
+from _report_tracking import tracking_section
 from _report_types import InvestmentReport, ReportMetric
 from _valuation_intelligence import build_valuation_intelligence
 from financial_health import financial_health
@@ -22,6 +23,7 @@ def build_report(
     company: dict[str, Any],
     research_context: dict[str, Any] | None = None,
     peer_context: dict[str, Any] | None = None,
+    tracking_context: dict[str, Any] | None = None,
     language: str = "en",
 ) -> InvestmentReport:
     lang = "ko" if language.lower().startswith("ko") else "en"
@@ -34,33 +36,48 @@ def build_report(
     key_metrics = important_metrics(company, value)
     assessments = assessment_rows(company, value, health, risks, research_context)
     overall = overall_label(assessments)
+    sections = build_sections(
+        company,
+        value,
+        health,
+        risks,
+        research_context,
+        key_metrics,
+        lang,
+        intelligence,
+        peer_context,
+    )
+    if tracking_context is not None:
+        insert_tracking_section(sections, tracking_context, lang)
     return InvestmentReport(
         company=str(company.get("company") or company.get("ticker") or "Unknown company"),
         ticker=str(company.get("ticker") or ""),
         language=lang,
         overall_label=overall,
         overall_summary=overall_summary(overall, lang),
-        sections=build_sections(
-            company,
-            value,
-            health,
-            risks,
-            research_context,
-            key_metrics,
-            lang,
-            intelligence,
-            peer_context,
-        ),
+        sections=sections,
         key_metrics=key_metrics,
         raw={
             "financials": company,
             "valuation": value,
             "valuation_intelligence": intelligence,
             "peer_context": peer_context,
+            "tracking_context": tracking_context,
             "financial_health": health,
             "risk": risks,
         },
     )
+
+
+def insert_tracking_section(
+    sections: list[Any], tracking_context: dict[str, Any], language: str
+) -> None:
+    section = tracking_section(tracking_context, language)
+    for index, item in enumerate(sections):
+        if getattr(item, "key", "") == "conclusion":
+            sections.insert(index, section)
+            return
+    sections.append(section)
 
 
 def earnings_context(research_context: dict[str, Any] | None) -> dict[str, Any] | None:
