@@ -8,11 +8,12 @@ English | [한국어](README_KO.md) | [日本語](README_JA.md) | [中文](READM
 
 YouRich does not provide its own AI model and it is not a standalone stock app. Claude Code or Codex handles reasoning and qualitative research; YouRich supplies the financial discipline underneath.
 
-**Current milestone: v0.8.0 — Thesis Tracking & Research Memory**
+**Current milestone: v0.9.0 — Catalyst & Event Intelligence**
 
-v0.8.0 adds local research snapshots, deterministic change detection, thesis
-tracking, watch variables, and compact history reports while preserving peer
-research, valuation intelligence, and official earnings evidence.
+v0.9.0 adds catalyst and event intelligence from primary sources, with material
+event timelines, thesis-impact mapping, upcoming official catalysts, and
+snapshot-aware event filtering while preserving thesis tracking, peer research,
+valuation intelligence, and official earnings evidence.
 
 [Why YouRich?](#why-not-just-ask-ai-directly) · [Architecture](#architecture) · [Capabilities](#capabilities) · [Quick Start](#quick-start) · [Research Layer](#v040-research-layer) · [Methodology](#methodology)
 

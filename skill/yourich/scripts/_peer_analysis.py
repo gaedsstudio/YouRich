@@ -8,7 +8,7 @@ from _peer_comparability import candidate_for
 from _peer_discovery import automatic_peer_tickers
 from _peer_metrics import normalized_metrics, peer_aggregates
 
-VERSION: Final = "0.8.0"
+VERSION: Final = "0.9.0"
 MIN_PEERS: Final = 2
 PREMIUM_THRESHOLD: Final = 20.0
 SUPPORT_THRESHOLD: Final = 10.0

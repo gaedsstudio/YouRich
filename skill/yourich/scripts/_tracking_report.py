@@ -17,6 +17,7 @@ def render_ko(result: dict[str, Any]) -> str:
         "",
     ]
     lines.extend(change_lines(result, language="ko"))
+    lines.extend(event_lines(result, language="ko"))
     lines.extend(["", "### 투자 논리", "", thesis_rows(result, language="ko")])
     lines.extend(
         [
@@ -43,6 +44,7 @@ def render_en(result: dict[str, Any]) -> str:
         "",
     ]
     lines.extend(change_lines(result, language="en"))
+    lines.extend(event_lines(result, language="en"))
     lines.extend(["", "### Thesis", "", thesis_rows(result, language="en")])
     lines.extend(
         [
@@ -67,6 +69,22 @@ def change_lines(result: dict[str, Any], language: str) -> list[str]:
         f"{marker(str(item.get('direction')))} {change_label(item, language)}"
         for item in changes[:8]
     ]
+
+
+def event_lines(result: dict[str, Any], language: str) -> list[str]:
+    context = result.get("event_context")
+    if not isinstance(context, dict):
+        return []
+    events = context.get("material_events")
+    if not isinstance(events, list) or not events:
+        return []
+    title = "### 새로운 주요 이벤트" if language == "ko" else "### New Material Events"
+    rows = [
+        f"- {event.get('published_at')}: {event.get('event_type')} ({event.get('direction')})"
+        for event in events[:5]
+        if isinstance(event, dict)
+    ]
+    return ["", title, "", *rows]
 
 
 def marker(direction: str) -> str:

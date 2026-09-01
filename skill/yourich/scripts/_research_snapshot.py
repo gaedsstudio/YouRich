@@ -12,7 +12,7 @@ from financial_health import financial_health
 from risk import risk_checks
 from valuation import valuation
 
-VERSION: Final = "0.8.0"
+VERSION: Final = "0.9.0"
 SCHEMA_VERSION: Final = "research_snapshot.v1"
 VOLATILE_KEYS: Final = {
     "created_at",

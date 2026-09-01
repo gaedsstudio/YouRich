@@ -189,7 +189,7 @@ def test_valuation_intelligence_cli_emits_json_and_markdown(tmp_path: Path) -> N
         check=True,
     )
 
-    assert json.loads(json_run.stdout)["version"] == "0.8.0"
+    assert json.loads(json_run.stdout)["version"] == "0.9.0"
     assert "Required FCF growth" in markdown_run.stdout
 
 

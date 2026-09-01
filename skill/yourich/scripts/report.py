@@ -19,17 +19,20 @@ def main() -> int:
     parser.add_argument("--research-context")
     parser.add_argument("--peer-context")
     parser.add_argument("--tracking-context")
+    parser.add_argument("--event-context")
     args = parser.parse_args()
     try:
         company = load_company(args)
         research_context = read_payload(args.research_context) if args.research_context else None
         peer_context = read_payload(args.peer_context) if args.peer_context else None
         tracking_context = read_payload(args.tracking_context) if args.tracking_context else None
+        event_context = read_payload(args.event_context) if args.event_context else None
         report = build_report(
             company,
             research_context=research_context,
             peer_context=peer_context,
             tracking_context=tracking_context,
+            event_context=event_context,
             language=args.language,
         )
         if args.format == "json":

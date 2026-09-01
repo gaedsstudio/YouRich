@@ -3,8 +3,9 @@ name: yourich
 description: >
   Analyze public companies and stocks using structured fundamental research,
   deterministic valuation scripts, valuation intelligence, SEC filing research,
-  industry and peer research, thesis tracking, local research memory, financial
-  quality checks, risk analysis, official earnings/guidance research, and evidence verification.
+  industry and peer research, catalyst and event intelligence, thesis tracking,
+  local research memory, financial quality checks, risk analysis, official
+  earnings/guidance research, and evidence verification.
   Use when the user asks to analyze, value, compare, investigate, or research a
   stock or public company as an investment.
 license: MIT
@@ -16,7 +17,7 @@ YouRich is an investment research framework for Claude Code and Codex. It does
 not provide an AI model and it is not a standalone stock-analysis product. Use
 the host agent for reasoning, qualitative business analysis, industry context,
 and final writing. Use the bundled scripts for deterministic quantitative work
-and primary-source filing or earnings evidence.
+and primary-source filing, earnings, or event evidence.
 
 The bundled scripts require Python 3.11 or newer.
 
@@ -47,16 +48,18 @@ interpretation.
    `scripts/valuation_intelligence.py`.
 8. For competitor, peer-relative, industry, or "compared with peers" questions,
    run `scripts/peer_research.py`.
-9. For "what changed since last time", "track this thesis", or research history
+9. For catalyst, event, or official upcoming-event questions, run
+   `scripts/event_intelligence.py`.
+10. For "what changed since last time", "track this thesis", or research history
    requests, run `scripts/thesis_tracker.py`.
-10. Run financial quality checks with `scripts/financial_health.py`.
-11. Run quantitative risk checks with `scripts/risk.py`.
-12. Verify important claims using the evidence rules in
+11. Run financial quality checks with `scripts/financial_health.py`.
+12. Run quantitative risk checks with `scripts/risk.py`.
+13. Verify important claims using the evidence rules in
    `references/evidence-framework.md`.
-13. Render the authoritative human-readable report with
+14. Render the authoritative human-readable report with
     `python scripts/report.py <ticker> --language <user-language>`.
-14. Use the rendered report as the final presentation source.
-15. Expose raw technical details only when explicitly requested.
+15. Use the rendered report as the final presentation source.
+16. Expose raw technical details only when explicitly requested.
 
 For narrower requests, execute the relevant subset:
 
@@ -80,6 +83,10 @@ For narrower requests, execute the relevant subset:
   recent earnings, guidance, management commentary, and thesis-change questions.
 - `guidance`: use `scripts/earnings_context.py <ticker>` and focus on guidance,
   previous guidance comparison, and company guidance versus actual results.
+- `events`: use `scripts/event_intelligence.py <ticker> --format markdown` for
+  recent official events, material timelines, thesis impact, and catalyst context.
+- `catalysts`: use `scripts/event_intelligence.py <ticker> --format markdown`
+  and include only upcoming catalysts with official evidence and confirmed dates.
 - `track`: use `scripts/thesis_tracker.py <ticker> capture` to intentionally
   save a local research baseline.
 - `update`: use `scripts/thesis_tracker.py <ticker> compare` to compare current
@@ -100,6 +107,9 @@ python scripts/valuation_intelligence.py AMD --discount-rate 10
 python scripts/peer_research.py NVDA
 python scripts/peer_research.py NVDA --peers AMD AVGO INTC
 python scripts/peer_research.py NVDA --format markdown --language ko
+python scripts/event_intelligence.py NVDA
+python scripts/event_intelligence.py NVDA --format markdown --language ko
+python scripts/event_intelligence.py NVDA --since-last-snapshot --days 90
 python scripts/thesis_tracker.py NVDA capture
 python scripts/thesis_tracker.py NVDA compare --format markdown --language ko
 python scripts/thesis_tracker.py NVDA history --format markdown
@@ -181,6 +191,16 @@ reported, and emits warnings such as `NO_OFFICIAL_EARNINGS_RELEASE`,
 `GUIDANCE_NOT_PROVIDED`, `PREVIOUS_GUIDANCE_UNAVAILABLE`,
 `GUIDANCE_PERIOD_NOT_COMPARABLE`, `EARNINGS_SEC_VALUE_MISMATCH`, and
 `EARNINGS_DOCUMENT_PARSE_INCOMPLETE` when evidence is incomplete.
+
+`event_intelligence.py` uses SEC filings and explicit official company evidence
+for catalyst and event research. It classifies material events into controlled
+event types, separates reported events from thesis interpretation, deduplicates
+duplicate primary sources, maps material events to thesis dimensions, and only
+lists upcoming catalysts when an official source confirms the date. Preserve
+warnings such as `NO_MATERIAL_EVENTS`, `EVENT_SOURCE_INCOMPLETE`,
+`EVENT_DUPLICATE_COLLAPSED`, `EVENT_MATERIALITY_UNCERTAIN`, and
+`UPCOMING_CATALYST_DATE_UNCONFIRMED`. Do not infer future catalysts from cadence
+or news sentiment, and do not claim price-reaction causality.
 
 For normal investment-analysis requests, do not respond with a long continuous
 investment essay. Use YouRich's report structure, prefer concise tables and

@@ -8,10 +8,10 @@
 
 YouRich 不提供自己的 AI 模型，也不是一个独立的股票分析应用。Claude Code 或 Codex 负责推理与定性研究，YouRich 负责底层的金融计算与验证纪律。
 
-**当前里程碑：v0.8.0 — Thesis Tracking & Research Memory**
+**当前里程碑：v0.9.0 — Catalyst & Event Intelligence**
 
-v0.8.0 增加本地研究快照、确定性变化检测、投资论点追踪、观察变量和简洁历史报告，
-同时保留同业研究、valuation intelligence 与官方财报证据。
+v0.9.0 增加基于一手来源的催化剂与事件智能、重大事件时间线、投资论点影响映射、
+已确认的未来催化剂和按快照过滤事件，同时保留投资论点追踪、同业研究、valuation intelligence 与官方财报证据。
 
 ---
 

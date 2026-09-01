@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from _report_event import event_section
 from _report_format import (
     meaning_for_basis,
     metadata_for,
@@ -24,6 +25,7 @@ def build_report(
     research_context: dict[str, Any] | None = None,
     peer_context: dict[str, Any] | None = None,
     tracking_context: dict[str, Any] | None = None,
+    event_context: dict[str, Any] | None = None,
     language: str = "en",
 ) -> InvestmentReport:
     lang = "ko" if language.lower().startswith("ko") else "en"
@@ -49,6 +51,8 @@ def build_report(
     )
     if tracking_context is not None:
         insert_tracking_section(sections, tracking_context, lang)
+    if event_context is not None:
+        insert_event_section(sections, event_context, lang)
     return InvestmentReport(
         company=str(company.get("company") or company.get("ticker") or "Unknown company"),
         ticker=str(company.get("ticker") or ""),
@@ -63,6 +67,7 @@ def build_report(
             "valuation_intelligence": intelligence,
             "peer_context": peer_context,
             "tracking_context": tracking_context,
+            "event_context": event_context,
             "financial_health": health,
             "risk": risks,
         },
@@ -73,6 +78,15 @@ def insert_tracking_section(
     sections: list[Any], tracking_context: dict[str, Any], language: str
 ) -> None:
     section = tracking_section(tracking_context, language)
+    for index, item in enumerate(sections):
+        if getattr(item, "key", "") == "conclusion":
+            sections.insert(index, section)
+            return
+    sections.append(section)
+
+
+def insert_event_section(sections: list[Any], event_context: dict[str, Any], language: str) -> None:
+    section = event_section(event_context, language)
     for index, item in enumerate(sections):
         if getattr(item, "key", "") == "conclusion":
             sections.insert(index, section)
