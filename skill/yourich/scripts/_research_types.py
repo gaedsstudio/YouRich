@@ -14,6 +14,8 @@ RESEARCH_MODES: Final = (
     "filings",
     "business",
     "management",
+    "earnings",
+    "guidance",
 )
 
 

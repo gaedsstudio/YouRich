@@ -45,6 +45,7 @@ def comparison_entry(row: dict[str, Any]) -> dict[str, Any]:
         "comparison_basis": row.get("comparison_basis", {}),
         "business_quality": business_quality(research),
         "evidence_quality": evidence_quality(research),
+        "earnings": earnings_context(research),
         "bull_case": bull_case(row, research),
         "bear_case": bear_case(row, research),
         "what_changed": what_changed(research),
@@ -65,6 +66,13 @@ def evidence_quality(research: dict[str, Any] | None) -> str:
         return "LOW"
     confidence = research.get("research_confidence")
     return str(confidence) if confidence else "LOW"
+
+
+def earnings_context(research: dict[str, Any] | None) -> dict[str, Any] | None:
+    if research is None:
+        return None
+    context = research.get("earnings_context")
+    return context if isinstance(context, dict) else None
 
 
 def bull_case(row: dict[str, Any], research: dict[str, Any] | None) -> list[str]:

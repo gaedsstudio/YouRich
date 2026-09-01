@@ -30,7 +30,7 @@ def compare(tickers: list[str], include_research: bool = False) -> list[dict[str
         }
         if include_research:
             row["research_context"] = build_research_context(
-                parse_research_request(ticker, "thesis", 2, 12)
+                parse_research_request(ticker, "earnings", 2, 12)
             )
         rows.append(row)
     warnings = comparison_warnings(rows)

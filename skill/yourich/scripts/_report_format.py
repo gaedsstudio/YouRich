@@ -256,5 +256,8 @@ def localized(text: str, language: str) -> str:
             "Filing evidence is available; review linked evidence before relying on "
             "qualitative claims."
         ): ("공시 근거가 있으며, 정성 판단은 연결된 증거를 확인해야 합니다."),
+        "Latest official earnings evidence is summarized separately from SEC facts.": (
+            "최근 공식 실적 근거를 SEC 재무 수치와 별도로 요약합니다."
+        ),
     }
     return labels.get(text, text)

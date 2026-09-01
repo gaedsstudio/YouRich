@@ -8,10 +8,11 @@ English | [한국어](README_KO.md) | [日本語](README_JA.md) | [中文](READM
 
 YouRich does not provide its own AI model and it is not a standalone stock app. Claude Code or Codex handles reasoning and qualitative research; YouRich supplies the financial discipline underneath.
 
-**Current milestone: v0.4.2 — TTM Selection Correctness Hotfix**
+**Current milestone: v0.5.0 — Earnings & Guidance Research**
 
-v0.4.2 fixes rolling TTM selection for annual-plus-YTD SEC facts and keeps
-valuation labels tied to each metric's explicit JSON basis.
+v0.5.0 adds official earnings-release evidence, structured guidance records,
+guidance-change comparison, management commentary, and thesis-change context
+without replacing deterministic SEC financial values.
 
 [Why YouRich?](#why-not-just-ask-ai-directly) · [Architecture](#architecture) · [Capabilities](#capabilities) · [Quick Start](#quick-start) · [Data Correctness](#v030-financial-data-correctness) · [Methodology](#methodology)
 

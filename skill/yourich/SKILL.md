@@ -3,8 +3,9 @@ name: yourich
 description: >
   Analyze public companies and stocks using structured fundamental research,
   deterministic valuation scripts, SEC filing research, financial quality checks,
-  risk analysis, and evidence verification. Use when the user asks to analyze, value,
-  compare, investigate, or research a stock or public company as an investment.
+  risk analysis, official earnings/guidance research, and evidence verification.
+  Use when the user asks to analyze, value, compare, investigate, or research a
+  stock or public company as an investment.
 license: MIT
 ---
 
@@ -14,7 +15,7 @@ YouRich is an investment research framework for Claude Code and Codex. It does
 not provide an AI model and it is not a standalone stock-analysis product. Use
 the host agent for reasoning, qualitative business analysis, industry context,
 and final writing. Use the bundled scripts for deterministic quantitative work
-and primary-source filing evidence.
+and primary-source filing or earnings evidence.
 
 The bundled scripts require Python 3.11 or newer.
 
@@ -64,6 +65,10 @@ For narrower requests, execute the relevant subset:
 - `business`: focus on business model, revenue drivers, segments, geography,
   cost structure, capital intensity, industry position, and dependencies.
 - `management`: focus on management and capital allocation from official evidence.
+- `earnings`: use `scripts/earnings_context.py <ticker> --format markdown` for
+  recent earnings, guidance, management commentary, and thesis-change questions.
+- `guidance`: use `scripts/earnings_context.py <ticker>` and focus on guidance,
+  previous guidance comparison, and company guidance versus actual results.
 
 ## Deterministic Tools
 
@@ -80,6 +85,9 @@ python scripts/compare.py AAPL MSFT
 python scripts/compare.py --format markdown --language en AAPL MSFT
 python scripts/fetch_filings.py AAPL --form 10-K --form 10-Q --limit 2
 python scripts/research_context.py AAPL --mode thesis
+python scripts/research_context.py AAPL --mode earnings
+python scripts/earnings_context.py AAPL --history 2
+python scripts/earnings_context.py AAPL --format markdown --language en
 python scripts/filing_parser.py --input filing.html --form 10-K
 python scripts/evidence.py
 ```
@@ -116,6 +124,14 @@ pretending the missing section was reviewed.
 dump full filings into the final prompt. Every qualitative claim follows
 `Claim -> Evidence -> Interpretation`; filing evidence may be summarized, but
 must not be fabricated.
+
+`earnings_context.py` uses official earnings evidence first, with SEC 8-K
+materials before other company sources. It preserves reported earnings metrics
+separately from deterministic SEC financial metrics, records guidance only when
+reported, and emits warnings such as `NO_OFFICIAL_EARNINGS_RELEASE`,
+`GUIDANCE_NOT_PROVIDED`, `PREVIOUS_GUIDANCE_UNAVAILABLE`,
+`GUIDANCE_PERIOD_NOT_COMPARABLE`, `EARNINGS_SEC_VALUE_MISMATCH`, and
+`EARNINGS_DOCUMENT_PARSE_INCOMPLETE` when evidence is incomplete.
 
 For normal investment-analysis requests, do not respond with a long continuous
 investment essay. Use YouRich's report structure, prefer concise tables and

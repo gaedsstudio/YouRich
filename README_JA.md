@@ -8,10 +8,11 @@
 
 YouRich 自体は AI モデルを提供せず、単体の株式分析アプリでもありません。Claude Code または Codex が推論と定性的リサーチを担当し、YouRich はその下で金融計算と検証プロセスを担当します。
 
-**現在のマイルストーン: v0.4.2 — TTM Selection Correctness Hotfix**
+**現在のマイルストーン: v0.5.0 — Earnings & Guidance Research**
 
-v0.4.2 は annual-plus-YTD SEC fact から rolling TTM を正しく選択し、
-valuation label を各 metric JSON の明示的な basis に合わせます。
+v0.5.0 は公式決算発表の根拠、構造化されたガイダンス、ガイダンス変化、
+経営陣コメント、投資仮説の変化コンテキストを追加します。決定論的な
+SEC 財務数値は決算発表数値で上書きしません。
 
 ---
 

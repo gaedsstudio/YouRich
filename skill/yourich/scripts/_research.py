@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from _core import ToolError, clean_ticker
+from _earnings import build_earnings_context, parse_earnings_request
 from _filing_parser import clean_filing_html, extract_sections
 from _filing_provider import FilingProvider, SecFilingProvider
 from _research_analysis import (
@@ -52,8 +53,8 @@ def build_research_context(
     financial_payload = load_financial_context(ticker)
     claims = research_claims(selected)
     coverage = evidence_coverage(selected)
-    return {
-        "version": "0.4.2",
+    context = {
+        "version": "0.5.0",
         "ticker": ticker,
         "mode": request.mode,
         "filings": [filing.to_dict() for filing in filings],
@@ -72,6 +73,11 @@ def build_research_context(
         "conclusion": conclusion(coverage, financial_payload),
         "warnings": sorted(set(warnings + financial_payload["warnings"])),
     }
+    if request.mode in {"earnings", "guidance"}:
+        context["earnings_context"] = build_earnings_context(
+            parse_earnings_request(ticker, request.filing_limit)
+        )
+    return context
 
 
 def section_inventory(

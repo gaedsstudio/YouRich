@@ -16,10 +16,12 @@ def main() -> int:
     parser.add_argument("--input")
     parser.add_argument("--format", choices=("markdown", "json"), default="markdown")
     parser.add_argument("--language", choices=("en", "ko"), default="en")
+    parser.add_argument("--research-context")
     args = parser.parse_args()
     try:
         company = load_company(args)
-        report = build_report(company, language=args.language)
+        research_context = read_payload(args.research_context) if args.research_context else None
+        report = build_report(company, research_context=research_context, language=args.language)
         if args.format == "json":
             write_json(report.to_dict())
         else:

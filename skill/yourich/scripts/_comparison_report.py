@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from _comparison_model import build_comparison_report
+from _comparison_overview import comparison_row_labels, comparison_value, has_earnings
 from _comparison_text import (
     bullet_list,
     change_text,
@@ -78,7 +79,7 @@ def model_entries(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def comparison_table(rows: list[dict[str, Any]], language: str) -> str:
-    row_labels = comparison_row_labels(language)
+    row_labels = comparison_row_labels(language, has_earnings(rows))
     table_rows = []
     for label, key in row_labels:
         table_rows.append(
@@ -86,22 +87,6 @@ def comparison_table(rows: list[dict[str, Any]], language: str) -> str:
             | {str(row.get("ticker", "")): comparison_value(row, key, language) for row in rows}
         )
     return markdown_table(table_rows)
-
-
-def comparison_value(row: dict[str, Any], key: str, language: str) -> str:
-    if key == "conclusion":
-        return str(row.get("valuation", {}).get("conclusion", "Unavailable"))
-    if key == "pe":
-        metric = row.get("valuation", {}).get("metrics", {}).get("pe", {})
-        return multiple_or_percent(metric.get("value"), "pe")
-    if key == "fcf_yield":
-        metric = row.get("valuation", {}).get("metrics", {}).get("fcf_yield", {})
-        return multiple_or_percent(metric.get("value"), "fcf_yield")
-    if key == "business":
-        value = row.get("business_quality")
-        if value:
-            return str(value)
-    return "근거가 부족합니다." if language == "ko" else "Insufficient evidence"
 
 
 def business_table(rows: list[dict[str, Any]], fallback: str, language: str) -> str:
@@ -263,19 +248,3 @@ def comparison_labels(language: str) -> dict[str, str]:
         ),
         "methodology": "Data Quality & Methodology",
     }
-
-
-def comparison_row_labels(language: str) -> list[tuple[str, str]]:
-    if language == "ko":
-        return [
-            ("결론", "conclusion"),
-            ("P/E(주가수익비율)", "pe"),
-            ("잉여현금흐름 수익률", "fcf_yield"),
-            ("사업 근거", "business"),
-        ]
-    return [
-        ("Conclusion", "conclusion"),
-        ("P/E", "pe"),
-        ("FCF Yield", "fcf_yield"),
-        ("Business evidence", "business"),
-    ]

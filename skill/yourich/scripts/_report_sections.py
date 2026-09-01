@@ -4,6 +4,8 @@ from decimal import Decimal
 from typing import Any
 
 from _core import decimal_or_none
+from _report_changes import changed_section
+from _report_earnings import earnings_context, earnings_section
 from _report_format import (
     localized,
     localized_metric_rows,
@@ -38,7 +40,7 @@ def build_sections(
     assessments = assessment_rows(company, value, health, risks, research_context)
     overall = overall_label(assessments)
     display_assessments = assessment_rows(company, value, health, risks, research_context, language)
-    return [
+    sections = [
         ReportSection("overall", heading["overall"], overall_summary(overall, language), []),
         ReportSection("glance", heading["glance"], "", display_assessments),
         ReportSection(
@@ -54,11 +56,21 @@ def build_sections(
         scenario_section("bull", heading["bull"], value, risks, language),
         scenario_section("bear", heading["bear"], value, risks, language),
         changed_section(research_context, heading["changed"], language),
-        ReportSection(
-            "conclusion", heading["conclusion"], investment_summary(overall, value, language), []
-        ),
-        quality_section(company, value, heading["quality"], language),
     ]
+    if earnings_context(research_context) is not None:
+        sections.append(earnings_section(research_context, heading["earnings"], language))
+    sections.extend(
+        [
+            ReportSection(
+                "conclusion",
+                heading["conclusion"],
+                investment_summary(overall, value, language),
+                [],
+            ),
+            quality_section(company, value, heading["quality"], language),
+        ]
+    )
+    return sections
 
 
 def assessment_rows(
@@ -186,19 +198,6 @@ def scenario_section(
         localized("Scenario points are evidence-led, not recommendations.", language),
         rows,
     )
-
-
-def changed_section(
-    research_context: dict[str, Any] | None, title: str, language: str
-) -> ReportSection:
-    change = (
-        research_context.get("risk_analysis", {}).get("risk_factor_change")
-        if research_context
-        else None
-    )
-    if isinstance(change, dict) and change.get("status") not in {None, "INSUFFICIENT_EVIDENCE"}:
-        return ReportSection("changed", title, f"Risk factor change: {change['status']}", [])
-    return ReportSection("changed", title, localized("Insufficient evidence", language), [])
 
 
 def metric_row(label: str, value: str, language: str) -> dict[str, str]:
