@@ -8,7 +8,7 @@ English | [한국어](README_KO.md) | [日本語](README_JA.md) | [中文](READM
 
 YouRich does not provide its own AI model and it is not a standalone stock app. Claude Code or Codex handles reasoning and qualitative research; YouRich supplies the financial discipline underneath.
 
-**Current milestone: v0.4.0 — Research Layer**
+**Current milestone: v0.3.1 — TTM Correctness Hotfix**
 
 v0.4 adds SEC 10-K/10-Q filing retrieval, section parsing, compact research
 context, business-quality review, management and capital-allocation evidence,

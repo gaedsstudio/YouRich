@@ -40,6 +40,8 @@ CONCEPTS: dict[str, tuple[Concept, ...]] = {
     "total_assets": (("us-gaap", "Assets", ("USD",)),),
     "total_liabilities": (("us-gaap", "Liabilities", ("USD",)),),
     "total_debt": (
+        ("us-gaap", "DebtAndFinanceLeaseObligations", ("USD",)),
+        ("us-gaap", "LongTermDebtAndFinanceLeaseObligations", ("USD",)),
         ("us-gaap", "ShortTermBorrowings", ("USD",)),
         ("us-gaap", "LongTermDebtCurrent", ("USD",)),
         ("us-gaap", "LongTermDebtAndFinanceLeaseObligationsCurrent", ("USD",)),

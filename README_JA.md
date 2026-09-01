@@ -8,7 +8,7 @@
 
 YouRich 自体は AI モデルを提供せず、単体の株式分析アプリでもありません。Claude Code または Codex が推論と定性的リサーチを担当し、YouRich はその下で金融計算と検証プロセスを担当します。
 
-**現在のマイルストーン: v0.4.0 — Research Layer**
+**現在のマイルストーン: v0.3.1 — TTM Correctness Hotfix**
 
 v0.4 では SEC 10-K/10-Q filing の取得、section parsing、compact research
 context、business quality、management / capital allocation evidence、そして

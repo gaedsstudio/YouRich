@@ -3,8 +3,10 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
-from _core import ZERO, ratio
-from _sec_types import FORM_RANK, TTM_QUARTERS, Concept, Fact, FieldSelection
+from _core import ratio
+from _sec_debt import select_total_debt
+from _sec_periods import is_current_enough, select_ttm
+from _sec_types import FORM_RANK, Concept, Fact, FieldSelection
 
 INCOME_FIELDS = {
     "revenue",
@@ -29,6 +31,8 @@ BALANCE_FIELDS = {
 
 
 def select_field(facts: Any, field: str, concepts: tuple[Concept, ...]) -> FieldSelection:
+    if field == "total_debt":
+        return select_total_debt(dedupe(parse_field_facts(facts, field, concepts)))
     if field in BALANCE_FIELDS or field == "eps":
         return select_first_available(facts, field, concepts)
     ttm_candidates = []
@@ -37,14 +41,21 @@ def select_field(facts: Any, field: str, concepts: tuple[Concept, ...]) -> Field
         raw = parse_field_facts(facts, field, (concept,), base_rank=rank)
         candidates = dedupe(raw)
         ttm = select_ttm(candidates)
-        if ttm.value is not None:
+        annual = select_latest_annual(candidates)
+        if ttm.value is not None and is_current_enough(ttm, annual):
             ttm_candidates.append(with_restatement(ttm, raw))
-        annual_fallbacks.append(with_restatement(select_latest_annual(candidates), raw))
-    if ttm_candidates:
-        return best_selection(ttm_candidates)
-    for selection in annual_fallbacks:
-        if selection.value is not None:
-            return best_selection([item for item in annual_fallbacks if item.value is not None])
+        annual_fallbacks.append(with_restatement(annual, raw))
+    valid_annuals = [selection for selection in annual_fallbacks if selection.value is not None]
+    best_annual = best_selection(valid_annuals) if valid_annuals else None
+    current_ttm = [
+        selection
+        for selection in ttm_candidates
+        if best_annual is None or is_current_enough(selection, best_annual)
+    ]
+    if current_ttm:
+        return best_selection(current_ttm)
+    if best_annual is not None:
+        return best_annual
     return FieldSelection(None, "unavailable", "LOW", (), restated=False, previous_value=None)
 
 
@@ -130,9 +141,9 @@ def parse_fact(
 
 
 def dedupe(facts: list[Fact]) -> list[Fact]:
-    latest: dict[tuple[str, str, str | None, str], Fact] = {}
+    latest: dict[tuple[str, str, str | None, str, str | None], Fact] = {}
     for fact in sorted(facts, key=sort_key):
-        latest[fact.period_key] = fact
+        latest[(*fact.period_key, fact.accn)] = fact
     return sorted(latest.values(), key=sort_key, reverse=True)
 
 
@@ -154,7 +165,10 @@ def select_snapshot(facts: list[Fact]) -> FieldSelection:
 
 
 def select_latest_annual(facts: list[Fact]) -> FieldSelection:
-    annual = [fact for fact in facts if fact.is_annual]
+    by_year: dict[int, Fact] = {}
+    for fact in sorted([item for item in facts if item.is_annual], key=sort_key):
+        by_year[fact.fy] = fact
+    annual = sorted(by_year.values(), key=sort_key, reverse=True)
     if not annual:
         return FieldSelection(None, "latest_annual", "LOW", (), restated=False, previous_value=None)
     selected = annual[0]
@@ -166,25 +180,6 @@ def select_latest_annual(facts: list[Fact]) -> FieldSelection:
         (selected,),
         restated=restated,
         previous_value=previous,
-    )
-
-
-def select_ttm(facts: list[Fact]) -> FieldSelection:
-    quarters = [fact for fact in facts if fact.is_quarter]
-    sequence = sorted(quarters, key=sort_key, reverse=True)[:TTM_QUARTERS]
-    if len(sequence) != TTM_QUARTERS:
-        return FieldSelection(
-            None, "ttm", "LOW", tuple(sequence), restated=False, previous_value=None
-        )
-    value = sum((fact.value for fact in sequence), ZERO)
-    confidence = min_confidence(sequence)
-    return FieldSelection(
-        value,
-        "ttm",
-        confidence,
-        tuple(sequence),
-        restated=False,
-        previous_value=None,
     )
 
 
@@ -218,9 +213,11 @@ def derived_eps(
 
 
 def annual_series(facts: Any, concepts: tuple[Concept, ...]) -> list[dict[str, Any]]:
-    rows = [
-        fact for fact in dedupe(parse_field_facts(facts, "revenue", concepts)) if fact.is_annual
-    ]
+    by_year: dict[int, Fact] = {}
+    for fact in sorted(dedupe(parse_field_facts(facts, "revenue", concepts)), key=sort_key):
+        if fact.is_annual:
+            by_year[fact.fy] = fact
+    rows = sorted(by_year.values(), key=sort_key, reverse=True)
     return [{"year": row.fy, "revenue": row.value} for row in rows[:5]]
 
 
@@ -264,12 +261,3 @@ def selection_key(selection: FieldSelection) -> tuple[str, int]:
 
 def sort_key(fact: Fact) -> tuple[str, str, int, int]:
     return (fact.end, fact.filed, -FORM_RANK[fact.form], -fact.concept_rank)
-
-
-def min_confidence(facts: list[Fact]) -> str:
-    values = {fact.confidence for fact in facts}
-    if "LOW" in values:
-        return "LOW"
-    if "MEDIUM" in values:
-        return "MEDIUM"
-    return "HIGH"

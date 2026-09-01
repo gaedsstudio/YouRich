@@ -8,7 +8,7 @@
 
 YouRich는 자체 AI 모델을 제공하지 않으며 독립적인 주식 분석 앱도 아닙니다. Claude Code 또는 Codex가 추론과 정성적 리서치를 담당하고, YouRich는 그 아래에서 금융 계산과 검증 절차를 담당합니다.
 
-**현재 버전: v0.4.0 — Research Layer**
+**현재 버전: v0.3.1 — TTM Correctness Hotfix**
 
 v0.4는 SEC 10-K/10-Q 공시 수집, 섹션 파싱, compact research context,
 business-quality 검토, management/capital allocation 근거, 그리고 정성적

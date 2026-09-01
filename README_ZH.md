@@ -8,7 +8,7 @@
 
 YouRich 不提供自己的 AI 模型，也不是一个独立的股票分析应用。Claude Code 或 Codex 负责推理与定性研究，YouRich 负责底层的金融计算与验证纪律。
 
-**当前里程碑：v0.4.0 — Research Layer**
+**当前里程碑：v0.3.1 — TTM Correctness Hotfix**
 
 v0.4 增加 SEC 10-K/10-Q filing 获取、section parsing、compact research
 context、business quality、management / capital allocation evidence，以及定性

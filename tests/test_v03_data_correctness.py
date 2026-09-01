@@ -20,7 +20,9 @@ import _sec_quality  # noqa: E402
 import compare as compare_module  # noqa: E402
 import valuation as valuation_module  # noqa: E402
 from v03_fixtures import (  # noqa: E402
+    apple_like_ytd_payload,
     companyfacts_payload,
+    duplicate_annual_payload,
     no_direct_eps_payload,
     stale_preferred_annual_facts,
     valuation_payload,
@@ -119,6 +121,151 @@ def test_data_quality_output_reports_mapping_and_ttm_coverage() -> None:
     assert result["ttm_coverage"] == "complete"
     assert result["mapping_confidence"] == "high"
     assert result["currency_match"] is True
+
+
+def test_apple_like_ytd_facts_are_reconstructed_before_ttm() -> None:
+    company = _sec.company_from_sec("AAPL", "Apple Inc.", apple_like_ytd_payload(), debug=False)
+
+    assert company["revenue"] == Decimal("117")
+    assert company["net_income"] == Decimal("24")
+    assert company["operating_income"] == Decimal("29")
+    assert company["eps"] == Decimal("8")
+    assert company["eps_method"] == "diluted_ttm"
+    assert company["operating_cash_flow"] == Decimal("46")
+    assert company["capital_expenditures"] == Decimal("-13")
+    assert company["free_cash_flow"] == Decimal("33")
+    assert company["fact_metadata"]["revenue"]["basis"] == "ttm"
+    assert company["fact_metadata"]["revenue"]["period_class"] == "DERIVED_TTM"
+    assert company["fact_metadata"]["revenue"]["component_periods"] == [
+        "2025-06-29:2025-09-27",
+        "2025-09-28:2025-12-27",
+        "2025-12-28:2026-03-28",
+        "2026-03-29:2026-06-27",
+    ]
+
+
+def test_overlapping_ytd_rows_do_not_create_complete_ttm() -> None:
+    selection = _sec_facts.select_field(
+        apple_like_ytd_payload()["facts"],
+        "revenue",
+        _sec.CONCEPTS["revenue"],
+    )
+
+    assert selection.value == Decimal("117")
+    assert [fact.value for fact in selection.facts] == [
+        Decimal("27"),
+        Decimal("24"),
+        Decimal("21"),
+        Decimal("45"),
+    ]
+    assert not any(fact.period_class in {"YTD_6M", "YTD_9M"} for fact in selection.facts)
+
+
+def test_ttm_rejects_gap_between_discrete_quarters() -> None:
+    facts = {
+        "us-gaap": {
+            "RevenueFromContractWithCustomerExcludingAssessedTax": {
+                "units": {
+                    "USD": [
+                        quarter_fact(10, "Q1", "2025-01-01", "2025-03-31"),
+                        quarter_fact(20, "Q2", "2025-04-01", "2025-06-30"),
+                        quarter_fact(30, "Q3", "2025-10-01", "2025-12-31"),
+                        quarter_fact(40, "Q4", "2026-01-01", "2026-03-31"),
+                    ]
+                }
+            }
+        }
+    }
+
+    selection = _sec_facts.select_field(facts, "revenue", _sec.CONCEPTS["revenue"])
+
+    assert selection.value is None
+    assert selection.basis == "unavailable"
+
+
+def test_stale_ttm_does_not_beat_newer_annual_for_same_concept() -> None:
+    facts = {
+        "us-gaap": {
+            "RevenueFromContractWithCustomerExcludingAssessedTax": {
+                "units": {
+                    "USD": [
+                        quarter_fact(10, "Q1", "2016-07-01", "2016-09-30"),
+                        quarter_fact(20, "Q2", "2016-10-01", "2016-12-31"),
+                        quarter_fact(30, "Q3", "2017-01-01", "2017-03-31"),
+                        quarter_fact(40, "Q4", "2017-04-01", "2017-06-30"),
+                        annual_fact(500, 2026, "2025-07-01", "2026-06-30"),
+                    ]
+                }
+            }
+        }
+    }
+
+    selection = _sec_facts.select_field(facts, "revenue", _sec.CONCEPTS["revenue"])
+
+    assert selection.value == Decimal("500")
+    assert selection.basis == "latest_annual"
+
+
+def test_annual_series_dedupes_restated_fiscal_years() -> None:
+    rows = _sec_facts.annual_series(
+        duplicate_annual_payload(),
+        _sec.CONCEPTS["revenue"],
+    )
+
+    assert rows == [
+        {"year": 2025, "revenue": Decimal("82")},
+        {"year": 2024, "revenue": Decimal("70")},
+    ]
+
+
+def test_single_debt_component_is_not_reported_as_total_debt() -> None:
+    facts = {
+        "us-gaap": {
+            "LongTermDebtCurrent": {
+                "units": {
+                    "USD": [
+                        {
+                            "val": 10,
+                            "fy": 2026,
+                            "fp": "Q3",
+                            "form": "10-Q",
+                            "filed": "2026-07-31",
+                            "end": "2026-06-27",
+                        }
+                    ]
+                }
+            }
+        }
+    }
+
+    selection = _sec_facts.select_field(facts, "total_debt", _sec.CONCEPTS["total_debt"])
+
+    assert selection.value is None
+    assert selection.basis == "total_debt_partial"
+
+
+def quarter_fact(value: int, fp: str, start: str, end: str) -> dict[str, object]:
+    return {
+        "val": value,
+        "fy": 2026,
+        "fp": fp,
+        "form": "10-Q",
+        "filed": "2026-04-30",
+        "start": start,
+        "end": end,
+    }
+
+
+def annual_fact(value: int, fy: int, start: str, end: str) -> dict[str, object]:
+    return {
+        "val": value,
+        "fy": fy,
+        "fp": "FY",
+        "form": "10-K",
+        "filed": "2026-07-30",
+        "start": start,
+        "end": end,
+    }
 
 
 def test_stock_split_warning_requires_large_per_share_date_gap() -> None:
