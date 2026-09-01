@@ -45,10 +45,9 @@ interpretation.
 8. Run quantitative risk checks with `scripts/risk.py`.
 9. Verify important claims using the evidence rules in
    `references/evidence-framework.md`.
-10. Construct a bull case.
-11. Construct a bear case.
-12. Produce an investment thesis.
-13. Produce the final structured conclusion.
+10. Construct the YouRich report model with `scripts/report.py`.
+11. Render the human-readable report in the user's language.
+12. Expose raw technical details only when explicitly requested.
 
 For narrower requests, execute the relevant subset:
 
@@ -73,6 +72,8 @@ python scripts/fetch_financials.py AAPL
 python scripts/valuation.py --ticker AAPL
 python scripts/financial_health.py --ticker AAPL
 python scripts/risk.py --ticker AAPL
+python scripts/report.py AAPL
+python scripts/report.py AAPL --format json
 python scripts/compare.py AAPL MSFT
 python scripts/fetch_filings.py AAPL --form 10-K --form 10-Q --limit 2
 python scripts/research_context.py AAPL --mode thesis
@@ -84,6 +85,8 @@ All scripts emit JSON. Use YouRich-derived financial metrics instead of
 recalculating market cap, NCAV, Price/NCAV, Graham Number, ratios, margins,
 trend calculations, or scoring in model reasoning. If a script returns `null` or
 lists a missing field, state that the data is unavailable instead of filling it.
+`scripts/report.py` is the exception: it emits Markdown by default for normal
+consumer-readable reports, and JSON only when `--format json` is requested.
 
 `fetch_financials.py` uses SEC Company Facts for fundamentals and delayed market
 quotes from configured free providers. Yahoo chart and Stooq CSV are unofficial
@@ -111,6 +114,12 @@ dump full filings into the final prompt. Every qualitative claim follows
 `Claim -> Evidence -> Interpretation`; filing evidence may be summarized, but
 must not be fabricated.
 
+For normal investment-analysis requests, do not respond with a long continuous
+investment essay. Use YouRich's report structure, prefer concise tables and
+sections, explain important financial terms in plain language, and keep
+technical basis/provenance available without making it the primary reading
+experience.
+
 Use `python scripts/fetch_financials.py AAPL --debug` when developing or
 auditing why a field was selected. Debug output may include selected and
 rejected SEC concepts with rejection reasons.
@@ -134,25 +143,21 @@ Read only what the request needs:
 Use this default structure for a full investment note:
 
 ```text
-Company
-Ticker
+Company / Ticker
 
+Overall Assessment
+At a Glance
 Investment Summary
-
-Business
+Key Metrics
 Business Quality
-Management / Capital Allocation
 Financial Quality
 Valuation
-Risks
-
+Key Risks
 Bull Case
 Bear Case
-
-Key Evidence
-Open Evidence Gaps
-
+What Changed
 Conclusion
+Data Quality & Methodology
 ```
 
 Conclusions must not be direct buy/sell instructions. Prefer valuation-oriented

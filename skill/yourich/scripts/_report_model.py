@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+from typing import Any
+
+from _report_format import (
+    meaning_for_basis,
+    metadata_for,
+    money,
+    multiple_or_percent,
+    text_or_none,
+)
+from _report_sections import assessment_rows, build_sections
+from _report_text import overall_label, overall_summary
+from _report_types import InvestmentReport, ReportMetric
+from financial_health import financial_health
+from risk import risk_checks
+from valuation import valuation
+
+
+def build_report(
+    company: dict[str, Any],
+    research_context: dict[str, Any] | None = None,
+    language: str = "en",
+) -> InvestmentReport:
+    lang = "ko" if language.lower().startswith("ko") else "en"
+    value = valuation(company)
+    health = financial_health(company)
+    risks = risk_checks(company)
+    key_metrics = important_metrics(company, value)
+    assessments = assessment_rows(company, value, health, risks, research_context)
+    overall = overall_label(assessments)
+    return InvestmentReport(
+        company=str(company.get("company") or company.get("ticker") or "Unknown company"),
+        ticker=str(company.get("ticker") or ""),
+        language=lang,
+        overall_label=overall,
+        overall_summary=overall_summary(overall, lang),
+        sections=build_sections(company, value, health, risks, research_context, key_metrics, lang),
+        key_metrics=key_metrics,
+        raw={"financials": company, "valuation": value, "financial_health": health, "risk": risks},
+    )
+
+
+def important_metrics(company: dict[str, Any], value: dict[str, Any]) -> list[ReportMetric]:
+    metrics = value.get("metrics", {})
+    return [
+        financial_metric("Revenue", company, "revenue", "Revenue scale on the selected basis."),
+        financial_metric(
+            "Net Income", company, "net_income", "Profit after expenses on the selected basis."
+        ),
+        valuation_metric("P/E", metrics, "pe", "Price paid for each dollar of selected earnings."),
+        valuation_metric(
+            "FCF Yield",
+            metrics,
+            "fcf_yield",
+            "Cash return generated for each $100 of market value.",
+        ),
+    ]
+
+
+def financial_metric(name: str, company: dict[str, Any], key: str, meaning: str) -> ReportMetric:
+    metadata = metadata_for(company, key)
+    source = company.get("field_sources", {}).get(key)
+    return ReportMetric(
+        name,
+        money(company.get(key)),
+        meaning_for_basis(meaning, metadata.get("basis")),
+        "reported_fact",
+        text_or_none(metadata.get("basis")),
+        text_or_none(source),
+    )
+
+
+def valuation_metric(name: str, metrics: dict[str, Any], key: str, meaning: str) -> ReportMetric:
+    metric = metrics.get(key, {})
+    return ReportMetric(
+        name,
+        multiple_or_percent(metric.get("value"), key),
+        meaning,
+        "derived_metric",
+        text_or_none(metric.get("basis")),
+        text_or_none(metric.get("formula")),
+    )
