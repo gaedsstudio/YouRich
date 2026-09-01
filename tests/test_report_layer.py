@@ -9,7 +9,7 @@ SCRIPT_DIR = ROOT / "skill" / "yourich" / "scripts"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from _report_format import render_markdown  # noqa: E402
-from _report_model import build_report  # noqa: E402
+from _report_model import build_report, financial_metric  # noqa: E402
 from _report_types import SECTION_ORDER  # noqa: E402
 
 
@@ -65,6 +65,65 @@ def test_report_json_generation_keeps_stable_keys() -> None:
     assert payload["raw"]["valuation"]["metrics"]["pe"]["basis"] == "latest_annual"
 
 
+def test_report_marks_latest_annual_revenue_as_reported_fact() -> None:
+    company = sample_company()
+    company["fact_metadata"]["revenue"] = {"basis": "latest_annual"}
+
+    payload = build_report(company).to_dict()
+
+    assert metric_types(payload)["Revenue"] == "reported_fact"
+
+
+def test_report_marks_direct_ytd_revenue_as_reported_fact() -> None:
+    company = sample_company()
+    company["fact_metadata"]["revenue"] = {"basis": "ytd_9m"}
+
+    payload = build_report(company).to_dict()
+
+    assert metric_types(payload)["Revenue"] == "reported_fact"
+
+
+def test_report_marks_reconstructed_ttm_revenue_as_derived_metric() -> None:
+    company = sample_company()
+    company["fact_metadata"]["revenue"] = reconstructed_ttm_metadata()
+
+    payload = build_report(company).to_dict()
+
+    assert metric_types(payload)["Revenue"] == "derived_metric"
+
+
+def test_report_marks_reconstructed_ttm_net_income_as_derived_metric() -> None:
+    company = sample_company()
+    company["fact_metadata"]["net_income"] = reconstructed_ttm_metadata()
+
+    payload = build_report(company).to_dict()
+
+    assert metric_types(payload)["Net Income"] == "derived_metric"
+
+
+def test_report_marks_calculated_fcf_as_derived_metric() -> None:
+    metric = financial_metric("Free Cash Flow", sample_company(), "free_cash_flow", "Cash flow.")
+
+    assert metric.to_dict()["type"] == "derived_metric"
+
+
+def test_report_marks_annual_fallback_eps_as_reported_fact() -> None:
+    company = sample_company()
+    company["eps"] = "2"
+    company["fact_metadata"]["eps"] = {"basis": "latest_annual"}
+
+    metric = financial_metric("EPS", company, "eps", "Earnings per share.")
+
+    assert metric.to_dict()["type"] == "reported_fact"
+
+
+def test_report_valuation_metrics_remain_derived_metric() -> None:
+    payload = build_report(sample_company()).to_dict()
+
+    assert metric_types(payload)["P/E"] == "derived_metric"
+    assert metric_types(payload)["FCF Yield"] == "derived_metric"
+
+
 def test_report_selects_korean_headings() -> None:
     markdown = render_markdown(build_report(sample_company(), language="ko"))
 
@@ -110,6 +169,22 @@ def test_report_cli_emits_json_when_requested(tmp_path: Path) -> None:
     result = json.loads(completed.stdout)
     assert result["ticker"] == "TEST"
     assert result["sections"][3]["key"] == "metrics"
+
+
+def metric_types(payload: dict[str, Any]) -> dict[str, str]:
+    return {item["name"]: item["type"] for item in payload["key_metrics"]}
+
+
+def reconstructed_ttm_metadata() -> dict[str, Any]:
+    return {
+        "basis": "ttm",
+        "derived_from": ["annual", "current_ytd", "prior_ytd"],
+        "source_facts": [
+            {"form": "10-K", "fp": "FY"},
+            {"form": "10-Q", "fp": "Q3"},
+            {"form": "10-Q", "fp": "Q3"},
+        ],
+    }
 
 
 def sample_company() -> dict[str, Any]:

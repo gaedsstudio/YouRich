@@ -65,9 +65,30 @@ def financial_metric(name: str, company: dict[str, Any], key: str, meaning: str)
         name,
         money(company.get(key)),
         meaning_for_basis(meaning, metadata.get("basis")),
-        "reported_fact",
+        financial_provenance_type(metadata, text_or_none(source)),
         text_or_none(metadata.get("basis")),
         text_or_none(source),
+    )
+
+
+def financial_provenance_type(metadata: dict[str, Any], source: str | None) -> str:
+    if metadata.get("provenance_type") == "derived_metric":
+        return "derived_metric"
+    if metadata.get("type") == "derived_metric":
+        return "derived_metric"
+    if source is not None and source.startswith("computed:"):
+        return "derived_metric"
+    if metadata.get("basis") == "ttm" and reconstructed_from_components(metadata):
+        return "derived_metric"
+    return "reported_fact"
+
+
+def reconstructed_from_components(metadata: dict[str, Any]) -> bool:
+    source_facts = metadata.get("source_facts")
+    return bool(
+        metadata.get("derived_from")
+        or metadata.get("component_periods")
+        or (isinstance(source_facts, list) and len(source_facts) > 1)
     )
 
 
