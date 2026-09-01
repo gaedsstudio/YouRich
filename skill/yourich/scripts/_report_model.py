@@ -21,6 +21,7 @@ from valuation import valuation
 def build_report(
     company: dict[str, Any],
     research_context: dict[str, Any] | None = None,
+    peer_context: dict[str, Any] | None = None,
     language: str = "en",
 ) -> InvestmentReport:
     lang = "ko" if language.lower().startswith("ko") else "en"
@@ -40,13 +41,22 @@ def build_report(
         overall_label=overall,
         overall_summary=overall_summary(overall, lang),
         sections=build_sections(
-            company, value, health, risks, research_context, key_metrics, lang, intelligence
+            company,
+            value,
+            health,
+            risks,
+            research_context,
+            key_metrics,
+            lang,
+            intelligence,
+            peer_context,
         ),
         key_metrics=key_metrics,
         raw={
             "financials": company,
             "valuation": value,
             "valuation_intelligence": intelligence,
+            "peer_context": peer_context,
             "financial_health": health,
             "risk": risks,
         },

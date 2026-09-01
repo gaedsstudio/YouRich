@@ -21,6 +21,7 @@ from _report_localization import (
     scenario_row,
 )
 from _report_methodology import quality_section
+from _report_peer import peer_section
 from _report_types import HEADINGS, ReportMetric, ReportSection
 from _report_valuation import valuation_rows
 
@@ -34,6 +35,7 @@ def build_sections(
     key_metrics: list[ReportMetric],
     language: str,
     valuation_intelligence: dict[str, Any] | None = None,
+    peer_context: dict[str, Any] | None = None,
 ) -> list[ReportSection]:
     from _report_text import investment_summary, overall_label, overall_summary
 
@@ -60,6 +62,8 @@ def build_sections(
     ]
     if earnings_context(research_context) is not None:
         sections.append(earnings_section(research_context, heading["earnings"], language))
+    if peer_context is not None:
+        sections.append(peer_section(peer_context, language))
     sections.extend(
         [
             ReportSection(

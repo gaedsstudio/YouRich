@@ -3,6 +3,8 @@ from typing import Any
 
 from _comparison_report import render_comparison_markdown
 from _core import ToolError, write_json
+from _peer_analysis import build_peer_research
+from _peer_report import render_peer_markdown
 from _research import build_research_context, parse_research_request
 from _sec import fetch_financials
 from _valuation_intelligence import build_valuation_intelligence
@@ -94,10 +96,18 @@ def main() -> int:
     parser.add_argument("tickers", nargs="+")
     parser.add_argument("--format", choices=("json", "markdown"), default="json")
     parser.add_argument("--language", choices=("en", "ko"), default="en")
+    parser.add_argument("--peer-mode", action="store_true")
     args = parser.parse_args()
     try:
         if len(args.tickers) < MIN_COMPARE_ARGS - 1:
             raise ToolError("compare requires at least two tickers")
+        if args.peer_mode:
+            report = peer_mode_report(args.tickers)
+            if args.format == "markdown":
+                print(render_peer_markdown(report, args.language), end="")
+            else:
+                write_json(report)
+            return 0
         rows = compare(args.tickers, include_research=args.format == "markdown")
         if args.format == "markdown":
             print(render_comparison_markdown(rows, args.language), end="")
@@ -107,6 +117,12 @@ def main() -> int:
         write_json({"status": "error", "error": str(exc)})
         return 1
     return 0
+
+
+def peer_mode_report(tickers: list[str]) -> dict[str, Any]:
+    company = fetch_financials(tickers[0])
+    peers = [fetch_financials(ticker) for ticker in tickers[1:]]
+    return build_peer_research(company, peers)
 
 
 if __name__ == "__main__":

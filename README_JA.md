@@ -8,10 +8,10 @@
 
 YouRich 自体は AI モデルを提供せず、単体の株式分析アプリでもありません。Claude Code または Codex が推論と定性的リサーチを担当し、YouRich はその下で金融計算と検証プロセスを担当します。
 
-**現在のマイルストーン: v0.6.0 — Valuation Intelligence**
+**現在のマイルストーン: v0.7.0 — Industry & Peer Research**
 
-v0.6.0 はリバース DCF、シナリオ valuation、感応度分析、シナリオベースの
-安全余裕コンテキストを追加しつつ、公式決算とガイダンス根拠を維持します。
+v0.7.0 は保守的な業界分類、同業比較可能性、相対 valuation、
+プレミアム正当化分析を追加しつつ、valuation intelligence と公式決算根拠を維持します。
 
 ---
 

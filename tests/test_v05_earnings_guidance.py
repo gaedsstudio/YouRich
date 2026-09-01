@@ -251,7 +251,7 @@ def test_earnings_context_cli_emits_json_when_driven_through_script(tmp_path: Pa
     )
 
     payload = json.loads(completed.stdout)
-    assert payload["version"] == "0.6.0"
+    assert payload["version"] == "0.7.0"
     assert payload["latest_earnings"]["document_type"] == "earnings_release"
 
 

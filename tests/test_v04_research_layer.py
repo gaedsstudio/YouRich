@@ -200,7 +200,7 @@ def test_research_context_builds_compact_evidence_when_filings_are_available(
 
     result = build_research_context(ResearchRequest("AAPL", evidence_limit=8), provider)
 
-    assert result["version"] == "0.6.0"
+    assert result["version"] == "0.7.0"
     assert result["ticker"] == "AAPL"
     assert result["research_confidence"] in {"MEDIUM", "HIGH"}
     assert result["business_analysis"]["segments"]["status"] == "SUPPORTED"

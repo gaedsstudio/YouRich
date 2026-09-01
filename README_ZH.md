@@ -8,10 +8,10 @@
 
 YouRich 不提供自己的 AI 模型，也不是一个独立的股票分析应用。Claude Code 或 Codex 负责推理与定性研究，YouRich 负责底层的金融计算与验证纪律。
 
-**当前里程碑：v0.6.0 — Valuation Intelligence**
+**当前里程碑：v0.7.0 — Industry & Peer Research**
 
-v0.6.0 增加反向 DCF、情景估值、敏感性分析和基于情景的安全边际语境，
-同时保留官方财报和指引证据。
+v0.7.0 增加保守的行业分类、同业可比性、相对估值和溢价合理性分析，
+同时保留 valuation intelligence 与官方财报证据。
 
 ---
 

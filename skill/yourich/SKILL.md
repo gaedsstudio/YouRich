@@ -3,8 +3,8 @@ name: yourich
 description: >
   Analyze public companies and stocks using structured fundamental research,
   deterministic valuation scripts, valuation intelligence, SEC filing research,
-  financial quality checks, risk analysis, official earnings/guidance research,
-  and evidence verification.
+  industry and peer research, financial quality checks, risk analysis, official
+  earnings/guidance research, and evidence verification.
   Use when the user asks to analyze, value, compare, investigate, or research a
   stock or public company as an investment.
 license: MIT
@@ -45,14 +45,16 @@ interpretation.
 6. Run deterministic valuation with `scripts/valuation.py`.
 7. For price-demanding, scenario, or "how expensive" questions, run
    `scripts/valuation_intelligence.py`.
-8. Run financial quality checks with `scripts/financial_health.py`.
-9. Run quantitative risk checks with `scripts/risk.py`.
-10. Verify important claims using the evidence rules in
+8. For competitor, peer-relative, industry, or "compared with peers" questions,
+   run `scripts/peer_research.py`.
+9. Run financial quality checks with `scripts/financial_health.py`.
+10. Run quantitative risk checks with `scripts/risk.py`.
+11. Verify important claims using the evidence rules in
    `references/evidence-framework.md`.
-11. Render the authoritative human-readable report with
+12. Render the authoritative human-readable report with
     `python scripts/report.py <ticker> --language <user-language>`.
-12. Use the rendered report as the final presentation source.
-13. Expose raw technical details only when explicitly requested.
+13. Use the rendered report as the final presentation source.
+14. Expose raw technical details only when explicitly requested.
 
 For narrower requests, execute the relevant subset:
 
@@ -65,6 +67,8 @@ For narrower requests, execute the relevant subset:
 - `compare`: run the same methodology for each ticker using
   `scripts/compare.py --format markdown --language <user-language>` and
   research context as needed.
+- `peers`: use `scripts/peer_research.py <ticker> --format markdown` for
+  competitor, peer-relative premium, industry, and comparable-company questions.
 - `thesis`: run full analysis, then combine quantitative evidence with filing evidence.
 - `filings`: fetch and summarize 10-K or 10-Q filing metadata and sections.
 - `business`: focus on business model, revenue drivers, segments, geography,
@@ -85,6 +89,9 @@ python scripts/valuation.py --ticker AAPL
 python scripts/valuation_intelligence.py AAPL
 python scripts/valuation_intelligence.py NVDA --format markdown
 python scripts/valuation_intelligence.py AMD --discount-rate 10
+python scripts/peer_research.py NVDA
+python scripts/peer_research.py NVDA --peers AMD AVGO INTC
+python scripts/peer_research.py NVDA --format markdown --language ko
 python scripts/financial_health.py --ticker AAPL
 python scripts/risk.py --ticker AAPL
 python scripts/report.py AAPL --language en
@@ -130,6 +137,18 @@ Preserve warnings such as `HISTORICAL_VALUATION_UNAVAILABLE`,
 `REVERSE_DCF_NO_VALID_FCF`, `REVERSE_DCF_NO_SOLUTION`,
 `SCENARIO_ASSUMPTION_WEAK`, `PRICE_HISTORY_INCOMPLETE`, and
 `VALUATION_HISTORY_INCOMPLETE`.
+
+For peer and industry questions such as "who are NVIDIA's competitors",
+"compare AMD, NVIDIA, and Broadcom by profitability and valuation", or "why is
+Apple expensive versus peers", prefer `scripts/peer_research.py`. Preserve
+explicit peer tickers. Automatic peer discovery is conservative and should be
+described with caveats. Peer analysis must compare only compatible metric bases
+or preserve `PEER_METRIC_BASIS_MISMATCH`. Do not provide overall buy rankings;
+rank only specific measurable dimensions when useful. Preserve warnings such as
+`INDUSTRY_CLASSIFICATION_WEAK`, `PEER_SET_TOO_SMALL`,
+`PEER_SET_LOW_COMPARABILITY`, `PEER_DATA_INCOMPLETE`,
+`PEER_METRIC_BASIS_MISMATCH`, `SEGMENT_NOT_COMPARABLE`, and
+`INDUSTRY_SIGNAL_INSUFFICIENT`.
 
 `fetch_filings.py` uses SEC EDGAR submissions and archive documents. Filing
 metadata is cached for 24 hours; primary documents are cached for seven days.
