@@ -5,18 +5,21 @@ from typing import Any
 
 from _core import decimal_or_none
 from _report_format import (
-    basis_label,
-    human_warning,
     localized,
-    market_data_label,
-    metadata_for,
-    metric_rows,
+    localized_metric_rows,
+    localized_valuation_row,
     money,
     number,
     pct,
     risk_label,
-    valuation_row,
 )
+from _report_localization import (
+    korean_area_label,
+    korean_assessment_label,
+    risk_row,
+    scenario_row,
+)
+from _report_methodology import quality_section
 from _report_types import HEADINGS, ReportMetric, ReportSection
 
 
@@ -34,13 +37,16 @@ def build_sections(
     heading = HEADINGS[language]
     assessments = assessment_rows(company, value, health, risks, research_context)
     overall = overall_label(assessments)
+    display_assessments = assessment_rows(company, value, health, risks, research_context, language)
     return [
         ReportSection("overall", heading["overall"], overall_summary(overall, language), []),
-        ReportSection("glance", heading["glance"], "", assessments),
+        ReportSection("glance", heading["glance"], "", display_assessments),
         ReportSection(
             "summary", heading["summary"], investment_summary(overall, value, language), []
         ),
-        ReportSection("metrics", heading["metrics"], "", metric_rows(key_metrics)),
+        ReportSection(
+            "metrics", heading["metrics"], "", localized_metric_rows(key_metrics, language)
+        ),
         business_section(research_context, heading["business"], language),
         financial_section(company, health, heading["financial"], language),
         valuation_section(value, heading["valuation"], language),
@@ -61,8 +67,9 @@ def assessment_rows(
     health: dict[str, Any],
     risks: dict[str, Any],
     research_context: dict[str, Any] | None,
+    language: str = "en",
 ) -> list[dict[str, str]]:
-    return [
+    rows = [
         {"Area": "Business Quality", "Assessment": business_assessment(research_context)},
         {"Area": "Profitability", "Assessment": profitability_assessment(health)},
         {"Area": "Financial Health", "Assessment": financial_assessment(health, risks)},
@@ -72,6 +79,15 @@ def assessment_rows(
         },
         {"Area": "Risk", "Assessment": risk_assessment(risks)},
         {"Area": "Evidence Quality", "Assessment": evidence_assessment(company, research_context)},
+    ]
+    if language != "ko":
+        return rows
+    return [
+        {
+            "항목": korean_area_label(row["Area"]),
+            "평가": korean_assessment_label(row["Assessment"]),
+        }
+        for row in rows
     ]
 
 
@@ -94,18 +110,22 @@ def financial_section(
 ) -> ReportSection:
     metrics = health.get("metrics", {})
     rows = [
-        {"Metric": "Gross Margin", "Value": pct(metrics.get("gross_margin", {}).get("value"))},
-        {
-            "Metric": "Operating Margin",
-            "Value": pct(metrics.get("operating_margin", {}).get("value")),
-        },
-        {"Metric": "Net Margin", "Value": pct(metrics.get("net_margin", {}).get("value"))},
-        {"Metric": "Current Ratio", "Value": number(metrics.get("current_ratio", {}).get("value"))},
-        {
-            "Metric": "Debt / Assets",
-            "Value": number(metrics.get("debt_to_assets", {}).get("value")),
-        },
-        {"Metric": "Free Cash Flow", "Value": money(company.get("free_cash_flow"))},
+        metric_row("Gross Margin", pct(metrics.get("gross_margin", {}).get("value")), language),
+        metric_row(
+            "Operating Margin",
+            pct(metrics.get("operating_margin", {}).get("value")),
+            language,
+        ),
+        metric_row("Net Margin", pct(metrics.get("net_margin", {}).get("value")), language),
+        metric_row(
+            "Current Ratio", number(metrics.get("current_ratio", {}).get("value")), language
+        ),
+        metric_row(
+            "Debt / Assets",
+            number(metrics.get("debt_to_assets", {}).get("value")),
+            language,
+        ),
+        metric_row("Free Cash Flow", money(company.get("free_cash_flow")), language),
     ]
     body = localized(
         "Profitability, liquidity, leverage, and cash generation are shown before interpretation.",
@@ -117,10 +137,10 @@ def financial_section(
 def valuation_section(value: dict[str, Any], title: str, language: str) -> ReportSection:
     metrics = value.get("metrics", {})
     rows = [
-        valuation_row(metrics, "P/E", "pe"),
-        valuation_row(metrics, "P/S", "ps"),
-        valuation_row(metrics, "FCF Yield", "fcf_yield"),
-        valuation_row(metrics, "Earnings Yield", "earnings_yield"),
+        localized_valuation_row(metrics, "P/E", "pe", language),
+        localized_valuation_row(metrics, "P/S", "ps", language),
+        localized_valuation_row(metrics, "FCF Yield", "fcf_yield", language),
+        localized_valuation_row(metrics, "Earnings Yield", "earnings_yield", language),
     ]
     body = localized(
         "Valuation is expensive when investors are paying a high price for current fundamentals.",
@@ -131,12 +151,12 @@ def valuation_section(value: dict[str, Any], title: str, language: str) -> Repor
 
 def risk_section(risks: dict[str, Any], title: str, language: str) -> ReportSection:
     rows = [
-        {"Risk": risk_label(str(item.get("id"))), "Status": "Triggered"}
+        risk_row(risk_label(str(item.get("id"))), "Triggered", language)
         for item in risks.get("risk_checks", [])
         if isinstance(item, dict) and item.get("status") == "triggered"
     ]
     if not rows:
-        rows.append({"Risk": "Quantitative checks", "Status": "No triggered risk checks"})
+        rows.append(risk_row("Quantitative checks", "No triggered risk checks", language))
     return ReportSection(
         "risks",
         title,
@@ -153,13 +173,13 @@ def scenario_section(
         isinstance(item, dict) and item.get("status") == "triggered"
         for item in risks.get("risk_checks", [])
     )
-    rows = [{"Point": "Profitability and cash generation remain durable"}]
+    rows = [scenario_row("Profitability and cash generation remain durable", language)]
     if key == "bear":
-        rows = [{"Point": "Valuation multiple compresses"}]
+        rows = [scenario_row("Valuation multiple compresses", language)]
         if triggered:
-            rows.append({"Point": "Triggered financial risks worsen"})
+            rows.append(scenario_row("Triggered financial risks worsen", language))
     elif "ATTRACTIVE" in valuation_label:
-        rows.append({"Point": "Valuation leaves room for upside"})
+        rows.append(scenario_row("Valuation leaves room for upside", language))
     return ReportSection(
         key,
         title,
@@ -181,37 +201,12 @@ def changed_section(
     return ReportSection("changed", title, localized("Insufficient evidence", language), [])
 
 
-def quality_section(
-    company: dict[str, Any], value: dict[str, Any], title: str, language: str
-) -> ReportSection:
-    rows = [
-        {"Item": "Financial data", "Value": "SEC Company Facts"},
-        {"Item": "Market data", "Value": market_data_label(company)},
-        {
-            "Item": "Revenue basis",
-            "Value": basis_label(metadata_for(company, "revenue").get("basis")),
-        },
-        {
-            "Item": "Net income basis",
-            "Value": basis_label(metadata_for(company, "net_income").get("basis")),
-        },
-        {"Item": "EPS basis", "Value": basis_label(metadata_for(company, "eps").get("basis"))},
-        {
-            "Item": "FCF basis",
-            "Value": basis_label(metadata_for(company, "free_cash_flow").get("basis")),
-        },
-        {
-            "Item": "TTM coverage",
-            "Value": str(company.get("data_quality", {}).get("ttm_coverage", "unknown")).title(),
-        },
-    ]
-    warnings = [human_warning(item, company) for item in value.get("warnings", [])]
-    body = (
-        "Warnings: " + "; ".join(warnings)
-        if warnings
-        else localized("No material warnings.", language)
-    )
-    return ReportSection("quality", title, body, rows)
+def metric_row(label: str, value: str, language: str) -> dict[str, str]:
+    if language == "ko":
+        from _report_format import korean_metric_label
+
+        return {"지표": korean_metric_label(label), "값": value}
+    return {"Metric": label, "Value": value}
 
 
 def business_assessment(research_context: dict[str, Any] | None) -> str:

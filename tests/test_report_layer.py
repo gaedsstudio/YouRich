@@ -128,8 +128,86 @@ def test_report_selects_korean_headings() -> None:
     markdown = render_markdown(build_report(sample_company(), language="ko"))
 
     assert "## 종합 판단" in markdown
+    assert "## 한눈에 보기" in markdown
     assert "## 핵심 지표" in markdown
+    assert "## 이전 공시 이후 변화" in markdown
     assert "## 데이터 및 산출 기준" in markdown
+
+
+def test_korean_report_contains_no_english_section_headings() -> None:
+    markdown = render_markdown(build_report(sample_company(), language="ko"))
+    headings = [
+        line.removeprefix("## ") for line in markdown.splitlines() if line.startswith("## ")
+    ]
+
+    assert headings == [
+        "종합 판단",
+        "한눈에 보기",
+        "투자 요약",
+        "핵심 지표",
+        "사업 경쟁력",
+        "재무 상태",
+        "가치평가",
+        "주요 위험",
+        "상승 시나리오",
+        "하락 시나리오",
+        "이전 공시 이후 변화",
+        "결론",
+        "데이터 및 산출 기준",
+    ]
+
+
+def test_markdown_preserves_report_section_order() -> None:
+    markdown = render_markdown(build_report(sample_company(), language="ko"))
+    headings = [
+        line.removeprefix("## ") for line in markdown.splitlines() if line.startswith("## ")
+    ]
+
+    assert headings[0] == "종합 판단"
+    assert headings.index("상승 시나리오") < headings.index("하락 시나리오")
+    assert headings[-1] == "데이터 및 산출 기준"
+
+
+def test_full_report_always_includes_required_final_sections() -> None:
+    markdown = render_markdown(build_report(sample_company(), language="ko"))
+
+    assert "## 상승 시나리오" in markdown
+    assert "## 하락 시나리오" in markdown
+    assert "## 이전 공시 이후 변화" in markdown
+    assert "## 데이터 및 산출 기준" in markdown
+
+
+def test_report_uses_controlled_conclusion_labels() -> None:
+    payload = build_report(sample_company()).to_dict()
+
+    assert payload["overall_assessment"]["label"] in {
+        "HIGH QUALITY / EXPENSIVE",
+        "HIGH QUALITY / ATTRACTIVE VALUATION",
+        "HIGH QUALITY / FAIRLY VALUED",
+        "ATTRACTIVE VALUATION",
+        "FAIRLY VALUED",
+        "EXPENSIVE",
+        "HIGH FINANCIAL RISK",
+        "INSUFFICIENT DATA",
+    }
+
+
+def test_report_text_avoids_direct_action_language() -> None:
+    markdown = render_markdown(build_report(sample_company(), language="ko"))
+
+    blocked = ("분할 접근", "보유 후보", "매수", "매도", "BUY", "SELL")
+    assert not any(term in markdown for term in blocked)
+
+
+def test_korean_report_localizes_table_labels() -> None:
+    markdown = render_markdown(build_report(sample_company(), language="ko"))
+
+    assert "| 항목 | 평가 |" in markdown
+    assert "| 위험 | 상태 |" in markdown
+    assert "| 요인 |" in markdown
+    assert "| Area | Assessment |" not in markdown
+    assert "| Risk | Status |" not in markdown
+    assert "| Point |" not in markdown
 
 
 def test_report_cli_emits_markdown_by_default(tmp_path: Path) -> None:

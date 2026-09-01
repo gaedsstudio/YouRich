@@ -1,5 +1,7 @@
-import sys
+import argparse
+from typing import Any
 
+from _comparison_report import render_comparison_markdown
 from _core import ToolError, write_json
 from _sec import fetch_financials
 from financial_health import financial_health
@@ -10,8 +12,8 @@ MIN_COMPARE_ARGS = 3
 MIN_COMPARE_ROWS = 2
 
 
-def compare(tickers: list[str]) -> list[dict[str, object]]:
-    rows: list[dict[str, object]] = []
+def compare(tickers: list[str]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
     for ticker in tickers:
         company = fetch_financials(ticker)
         valuation_result = valuation(company)
@@ -34,14 +36,14 @@ def compare(tickers: list[str]) -> list[dict[str, object]]:
     return rows
 
 
-def comparison_basis(valuation_result: dict[str, object]) -> dict[str, str | None]:
+def comparison_basis(valuation_result: dict[str, Any]) -> dict[str, str | None]:
     metrics = valuation_result.get("metrics")
     if not isinstance(metrics, dict):
         return {}
     return {name: metric_basis(metrics, name) for name in ("pe", "ps", "fcf_yield", "pb")}
 
 
-def metric_basis(metrics: dict[object, object], name: str) -> str | None:
+def metric_basis(metrics: dict[Any, Any], name: str) -> str | None:
     metric = metrics.get(name)
     if not isinstance(metric, dict):
         return None
@@ -51,7 +53,7 @@ def metric_basis(metrics: dict[object, object], name: str) -> str | None:
     return "|".join(str(value) for key, value in sorted(periods.items()) if key.endswith("_basis"))
 
 
-def comparison_warnings(rows: list[dict[str, object]]) -> list[str]:
+def comparison_warnings(rows: list[dict[str, Any]]) -> list[str]:
     if len(rows) < MIN_COMPARE_ROWS:
         return []
     first = rows[0].get("comparison_basis")
@@ -65,16 +67,25 @@ def comparison_warnings(rows: list[dict[str, object]]) -> list[str]:
     return warnings
 
 
-def metric_basis_differs(row: dict[str, object], metric: str, expected: object) -> bool:
+def metric_basis_differs(row: dict[str, Any], metric: str, expected: Any) -> bool:
     basis = row.get("comparison_basis")
     return isinstance(basis, dict) and basis.get(metric) != expected
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("tickers", nargs="+")
+    parser.add_argument("--format", choices=("json", "markdown"), default="json")
+    parser.add_argument("--language", choices=("en", "ko"), default="en")
+    args = parser.parse_args()
     try:
-        if len(sys.argv) < MIN_COMPARE_ARGS:
+        if len(args.tickers) < MIN_COMPARE_ARGS - 1:
             raise ToolError("compare requires at least two tickers")
-        write_json(compare(sys.argv[1:]))
+        rows = compare(args.tickers)
+        if args.format == "markdown":
+            print(render_comparison_markdown(rows, args.language), end="")
+        else:
+            write_json(rows)
     except ToolError as exc:
         write_json({"status": "error", "error": str(exc)})
         return 1

@@ -40,9 +40,9 @@ def investment_summary(label: str, value: dict[str, Any], language: str) -> str:
     if language == "ko":
         return (
             f"YouRich 결론은 {label}입니다. 가치평가 산출 결론은 {conclusion}이며, "
-            "확정적 매수/매도 판단은 제공하지 않습니다."
+            "투자 행동 지시는 제공하지 않습니다."
         )
     return (
         f"YouRich's conclusion is {label}. The deterministic valuation result is "
-        f"{conclusion}; this is not a guaranteed buy or sell instruction."
+        f"{conclusion}; this is not an investment action instruction."
     )

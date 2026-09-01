@@ -45,8 +45,9 @@ interpretation.
 8. Run quantitative risk checks with `scripts/risk.py`.
 9. Verify important claims using the evidence rules in
    `references/evidence-framework.md`.
-10. Construct the YouRich report model with `scripts/report.py`.
-11. Render the human-readable report in the user's language.
+10. Render the authoritative human-readable report with
+    `python scripts/report.py <ticker> --language <user-language>`.
+11. Use the rendered report as the final presentation source.
 12. Expose raw technical details only when explicitly requested.
 
 For narrower requests, execute the relevant subset:
@@ -55,8 +56,9 @@ For narrower requests, execute the relevant subset:
 - `valuation`: run valuation metrics and valuation-oriented conclusion.
 - `financials`: fetch and normalize company financials.
 - `risk`: run quantitative risk checks and SEC filing risk review.
-- `compare`: run the same methodology for each ticker using `scripts/compare.py`
-  and research context as needed.
+- `compare`: run the same methodology for each ticker using
+  `scripts/compare.py --format markdown --language <user-language>` and
+  research context as needed.
 - `thesis`: run full analysis, then combine quantitative evidence with filing evidence.
 - `filings`: fetch and summarize 10-K or 10-Q filing metadata and sections.
 - `business`: focus on business model, revenue drivers, segments, geography,
@@ -72,9 +74,10 @@ python scripts/fetch_financials.py AAPL
 python scripts/valuation.py --ticker AAPL
 python scripts/financial_health.py --ticker AAPL
 python scripts/risk.py --ticker AAPL
-python scripts/report.py AAPL
+python scripts/report.py AAPL --language en
 python scripts/report.py AAPL --format json
 python scripts/compare.py AAPL MSFT
+python scripts/compare.py --format markdown --language en AAPL MSFT
 python scripts/fetch_filings.py AAPL --form 10-K --form 10-Q --limit 2
 python scripts/research_context.py AAPL --mode thesis
 python scripts/filing_parser.py --input filing.html --form 10-K
@@ -119,6 +122,16 @@ investment essay. Use YouRich's report structure, prefer concise tables and
 sections, explain important financial terms in plain language, and keep
 technical basis/provenance available without making it the primary reading
 experience.
+
+Treat the YouRich rendered report structure as authoritative. Do not discard its
+section ordering and rewrite the analysis as a free-form essay. You may improve
+wording inside sections, but preserve the report hierarchy. For Korean requests,
+run report and comparison presentation commands with `--language ko` and keep
+all visible report section headings in Korean.
+
+Do not add direct action guidance such as how much, when, or in what pattern to
+buy or sell. Prefer research language about valuation, risk, evidence quality,
+and scenarios.
 
 Use `python scripts/fetch_financials.py AAPL --debug` when developing or
 auditing why a field was selected. Debug output may include selected and

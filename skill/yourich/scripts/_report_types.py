@@ -90,7 +90,7 @@ HEADINGS: dict[str, dict[str, str]] = {
         "risks": "주요 위험",
         "bull": "상승 시나리오",
         "bear": "하락 시나리오",
-        "changed": "변화 요약",
+        "changed": "이전 공시 이후 변화",
         "conclusion": "결론",
         "quality": "데이터 및 산출 기준",
     },

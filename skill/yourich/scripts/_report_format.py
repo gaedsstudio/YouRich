@@ -42,12 +42,38 @@ def metric_rows(metrics: list[ReportMetric]) -> list[dict[str, str]]:
     ]
 
 
+def localized_metric_rows(metrics: list[ReportMetric], language: str) -> list[dict[str, str]]:
+    if language != "ko":
+        return metric_rows(metrics)
+    return [
+        {
+            "지표": korean_metric_label(metric.name),
+            "값": metric.value,
+            "의미": korean_meaning(metric.meaning),
+        }
+        for metric in metrics
+    ]
+
+
 def valuation_row(metrics: dict[str, Any], label: str, key: str) -> dict[str, str]:
     metric = metrics.get(key, {})
     return {
         "Metric": label,
         "Value": multiple_or_percent(metric.get("value"), key),
         "Basis": basis_label(metric.get("basis")),
+    }
+
+
+def localized_valuation_row(
+    metrics: dict[str, Any], label: str, key: str, language: str
+) -> dict[str, str]:
+    row = valuation_row(metrics, label, key)
+    if language != "ko":
+        return row
+    return {
+        "지표": korean_metric_label(row["Metric"]),
+        "값": row["Value"],
+        "기준": korean_basis_label(row["Basis"]),
     }
 
 
@@ -100,6 +126,58 @@ def basis_label(value: Any) -> str:
     return labels.get(basis, basis.replace("_", " ").title())
 
 
+def korean_basis_label(label: str) -> str:
+    labels = {
+        "TTM": "최근 12개월",
+        "Latest annual": "최근 연간",
+        "Latest snapshot": "최근 시점",
+        "Market snapshot": "시장 시점",
+        "Market quote": "시장 가격",
+        "Unavailable": "사용 불가",
+        "Partial": "일부",
+        "Complete": "전체",
+    }
+    return labels.get(label, label)
+
+
+def korean_metric_label(label: str) -> str:
+    labels = {
+        "Revenue": "매출",
+        "Net Income": "순이익",
+        "P/E": "P/E(주가수익비율)",
+        "P/S": "P/S(주가매출비율)",
+        "FCF Yield": "잉여현금흐름 수익률",
+        "Earnings Yield": "이익수익률",
+        "Gross Margin": "매출총이익률",
+        "Operating Margin": "영업이익률",
+        "Net Margin": "순이익률",
+        "Current Ratio": "유동비율",
+        "Debt / Assets": "부채 / 자산",
+        "Free Cash Flow": "잉여현금흐름",
+    }
+    return labels.get(label, label)
+
+
+def korean_meaning(meaning: str) -> str:
+    labels = {
+        "Revenue scale on the last 12 months.": "최근 12개월 기준 매출 규모입니다.",
+        "Revenue scale on the latest annual period.": "최근 연간 기준 매출 규모입니다.",
+        "Revenue scale on the selected basis.": "선택된 기준의 매출 규모입니다.",
+        "Profit after expenses on the last 12 months.": "최근 12개월 기준 비용 차감 후 이익입니다.",
+        "Profit after expenses on the latest annual period.": (
+            "최근 연간 기준 비용 차감 후 이익입니다."
+        ),
+        "Profit after expenses on the selected basis.": "선택된 기준의 비용 차감 후 이익입니다.",
+        "Price paid for each dollar of selected earnings.": (
+            "선택된 이익 1달러에 대해 시장이 지불하는 가격입니다."
+        ),
+        "Cash return generated for each $100 of market value.": (
+            "시가총액 100달러당 창출되는 현금수익률입니다."
+        ),
+    }
+    return labels.get(meaning, meaning)
+
+
 def meaning_for_basis(meaning: str, basis: Any) -> str:
     label = basis_label(basis)
     if label == "TTM":
@@ -117,13 +195,18 @@ def market_data_label(company: dict[str, Any]) -> str:
     return "Unavailable"
 
 
-def human_warning(code: Any, company: dict[str, Any] | None = None) -> str:
+def human_warning(code: Any, company: dict[str, Any] | None = None, language: str = "en") -> str:
     text = str(code)
     if text == "TTM_INCOMPLETE_USING_ANNUAL_FALLBACK":
         fields = annual_fallback_fields({} if company is None else company)
         suffix = "" if not fields else ": " + ", ".join(fields)
+        if language == "ko":
+            subject = "EPS" if "EPS" in fields else "일부 항목"
+            return f"{subject}는 최근 연간 수치를 사용했습니다."
         return "Annual fallback used" + suffix
     if text == "SEC_USER_AGENT_NOT_CONFIGURED":
+        if language == "ko":
+            return "SEC User-Agent가 설정되지 않았습니다."
         return "SEC User-Agent not configured"
     return text.replace("_", " ").title()
 
