@@ -15,7 +15,7 @@ from _earnings_parser import extract_earnings_release
 from _earnings_provider import EarningsProvider, SecEarningsProvider
 from _earnings_types import EarningsRelease, EarningsRequest
 
-VERSION = "0.5.0"
+VERSION = "0.6.0"
 
 
 def build_earnings_context(

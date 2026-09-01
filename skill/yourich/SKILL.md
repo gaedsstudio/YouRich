@@ -2,8 +2,9 @@
 name: yourich
 description: >
   Analyze public companies and stocks using structured fundamental research,
-  deterministic valuation scripts, SEC filing research, financial quality checks,
-  risk analysis, official earnings/guidance research, and evidence verification.
+  deterministic valuation scripts, valuation intelligence, SEC filing research,
+  financial quality checks, risk analysis, official earnings/guidance research,
+  and evidence verification.
   Use when the user asks to analyze, value, compare, investigate, or research a
   stock or public company as an investment.
 license: MIT
@@ -42,19 +43,23 @@ interpretation.
 4. Normalize data and list missing fields.
 5. Analyze business fundamentals only from returned evidence or cited sources.
 6. Run deterministic valuation with `scripts/valuation.py`.
-7. Run financial quality checks with `scripts/financial_health.py`.
-8. Run quantitative risk checks with `scripts/risk.py`.
-9. Verify important claims using the evidence rules in
+7. For price-demanding, scenario, or "how expensive" questions, run
+   `scripts/valuation_intelligence.py`.
+8. Run financial quality checks with `scripts/financial_health.py`.
+9. Run quantitative risk checks with `scripts/risk.py`.
+10. Verify important claims using the evidence rules in
    `references/evidence-framework.md`.
-10. Render the authoritative human-readable report with
+11. Render the authoritative human-readable report with
     `python scripts/report.py <ticker> --language <user-language>`.
-11. Use the rendered report as the final presentation source.
-12. Expose raw technical details only when explicitly requested.
+12. Use the rendered report as the final presentation source.
+13. Expose raw technical details only when explicitly requested.
 
 For narrower requests, execute the relevant subset:
 
 - `analyze`: run the full workflow.
-- `valuation`: run valuation metrics and valuation-oriented conclusion.
+- `valuation`: run `scripts/valuation_intelligence.py` when the user asks what
+  growth the current price requires, whether valuation is demanding, or wants
+  bear/base/bull scenario ranges; use `scripts/valuation.py` for basic multiples.
 - `financials`: fetch and normalize company financials.
 - `risk`: run quantitative risk checks and SEC filing risk review.
 - `compare`: run the same methodology for each ticker using
@@ -77,6 +82,9 @@ Use Python 3.11+ and run scripts from this skill directory:
 ```bash
 python scripts/fetch_financials.py AAPL
 python scripts/valuation.py --ticker AAPL
+python scripts/valuation_intelligence.py AAPL
+python scripts/valuation_intelligence.py NVDA --format markdown
+python scripts/valuation_intelligence.py AMD --discount-rate 10
 python scripts/financial_health.py --ticker AAPL
 python scripts/risk.py --ticker AAPL
 python scripts/report.py AAPL --language en
@@ -112,6 +120,16 @@ present low-confidence SEC mappings as certain facts. Distinguish reported SEC
 facts from derived metrics and qualitative interpretation.
 Never describe a metric as TTM unless the metric JSON basis is `ttm`. Do not
 infer TTM status from the existence of a numeric value.
+
+For valuation-intelligence requests such as "how expensive is Apple now",
+"what growth does NVIDIA's current price require", or "compare AMD and NVIDIA
+valuation", prefer `scripts/valuation_intelligence.py` and the enhanced
+valuation section over only showing P/E, P/S, or FCF yield. Treat reverse DCF
+and scenario values as valuation context, not price targets or action guidance.
+Preserve warnings such as `HISTORICAL_VALUATION_UNAVAILABLE`,
+`REVERSE_DCF_NO_VALID_FCF`, `REVERSE_DCF_NO_SOLUTION`,
+`SCENARIO_ASSUMPTION_WEAK`, `PRICE_HISTORY_INCOMPLETE`, and
+`VALUATION_HISTORY_INCOMPLETE`.
 
 `fetch_filings.py` uses SEC EDGAR submissions and archive documents. Filing
 metadata is cached for 24 hours; primary documents are cached for seven days.

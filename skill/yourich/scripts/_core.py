@@ -15,7 +15,7 @@ from urllib.request import Request, urlopen
 
 ZERO = Decimal("0")
 HUNDRED = Decimal("100")
-SEC_AGENT = "YouRich/0.5.0 earnings-guidance-research"
+SEC_AGENT = "YouRich/0.6.0 valuation-intelligence"
 SEC_USER_AGENT_WARNING = "SEC_USER_AGENT_NOT_CONFIGURED"
 MAX_TICKER_LENGTH = 12
 MARKET_QUOTE_TTL_SECONDS = 900

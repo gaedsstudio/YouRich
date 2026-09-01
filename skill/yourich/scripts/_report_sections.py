@@ -9,7 +9,6 @@ from _report_earnings import earnings_context, earnings_section
 from _report_format import (
     localized,
     localized_metric_rows,
-    localized_valuation_row,
     money,
     number,
     pct,
@@ -23,6 +22,7 @@ from _report_localization import (
 )
 from _report_methodology import quality_section
 from _report_types import HEADINGS, ReportMetric, ReportSection
+from _report_valuation import valuation_rows
 
 
 def build_sections(
@@ -33,6 +33,7 @@ def build_sections(
     research_context: dict[str, Any] | None,
     key_metrics: list[ReportMetric],
     language: str,
+    valuation_intelligence: dict[str, Any] | None = None,
 ) -> list[ReportSection]:
     from _report_text import investment_summary, overall_label, overall_summary
 
@@ -51,7 +52,7 @@ def build_sections(
         ),
         business_section(research_context, heading["business"], language),
         financial_section(company, health, heading["financial"], language),
-        valuation_section(value, heading["valuation"], language),
+        valuation_section(value, heading["valuation"], language, valuation_intelligence),
         risk_section(risks, heading["risks"], language),
         scenario_section("bull", heading["bull"], value, risks, language),
         scenario_section("bear", heading["bear"], value, risks, language),
@@ -146,14 +147,14 @@ def financial_section(
     return ReportSection("financial", title, body, rows)
 
 
-def valuation_section(value: dict[str, Any], title: str, language: str) -> ReportSection:
+def valuation_section(
+    value: dict[str, Any],
+    title: str,
+    language: str,
+    intelligence: dict[str, Any] | None = None,
+) -> ReportSection:
     metrics = value.get("metrics", {})
-    rows = [
-        localized_valuation_row(metrics, "P/E", "pe", language),
-        localized_valuation_row(metrics, "P/S", "ps", language),
-        localized_valuation_row(metrics, "FCF Yield", "fcf_yield", language),
-        localized_valuation_row(metrics, "Earnings Yield", "earnings_yield", language),
-    ]
+    rows = valuation_rows(metrics, intelligence, language)
     body = localized(
         "Valuation is expensive when investors are paying a high price for current fundamentals.",
         language,

@@ -40,6 +40,7 @@ def comparison_entry(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "ticker": str(row.get("ticker", "")),
         "valuation": row.get("valuation", {}),
+        "valuation_intelligence": row.get("valuation_intelligence", {}),
         "financial_quality": row.get("financial_quality", {}),
         "risk": row.get("risk", {}),
         "comparison_basis": row.get("comparison_basis", {}),

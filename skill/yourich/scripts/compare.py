@@ -5,6 +5,7 @@ from _comparison_report import render_comparison_markdown
 from _core import ToolError, write_json
 from _research import build_research_context, parse_research_request
 from _sec import fetch_financials
+from _valuation_intelligence import build_valuation_intelligence
 from financial_health import financial_health
 from risk import risk_checks
 from valuation import valuation
@@ -18,20 +19,32 @@ def compare(tickers: list[str], include_research: bool = False) -> list[dict[str
     for ticker in tickers:
         company = fetch_financials(ticker)
         valuation_result = valuation(company)
+        research_context = (
+            build_research_context(parse_research_request(ticker, "earnings", 2, 12))
+            if include_research
+            else None
+        )
+        earnings = (
+            research_context.get("earnings_context")
+            if isinstance(research_context, dict)
+            and isinstance(research_context.get("earnings_context"), dict)
+            else None
+        )
         row = {
             "company": company["company"],
             "ticker": company["ticker"],
             "valuation": valuation_result,
+            "valuation_intelligence": build_valuation_intelligence(
+                company, earnings_context=earnings
+            ),
             "financial_quality": financial_health(company),
             "risk": risk_checks(company),
             "missing_fields": company["missing_fields"],
             "provider": company["provider"],
             "comparison_basis": comparison_basis(valuation_result),
         }
-        if include_research:
-            row["research_context"] = build_research_context(
-                parse_research_request(ticker, "earnings", 2, 12)
-            )
+        if research_context is not None:
+            row["research_context"] = research_context
         rows.append(row)
     warnings = comparison_warnings(rows)
     if warnings:

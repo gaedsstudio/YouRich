@@ -12,6 +12,7 @@ from _report_format import (
 from _report_sections import assessment_rows, build_sections
 from _report_text import overall_label, overall_summary
 from _report_types import InvestmentReport, ReportMetric
+from _valuation_intelligence import build_valuation_intelligence
 from financial_health import financial_health
 from risk import risk_checks
 from valuation import valuation
@@ -26,6 +27,9 @@ def build_report(
     value = valuation(company)
     health = financial_health(company)
     risks = risk_checks(company)
+    intelligence = build_valuation_intelligence(
+        company, earnings_context=earnings_context(research_context)
+    )
     key_metrics = important_metrics(company, value)
     assessments = assessment_rows(company, value, health, risks, research_context)
     overall = overall_label(assessments)
@@ -35,10 +39,25 @@ def build_report(
         language=lang,
         overall_label=overall,
         overall_summary=overall_summary(overall, lang),
-        sections=build_sections(company, value, health, risks, research_context, key_metrics, lang),
+        sections=build_sections(
+            company, value, health, risks, research_context, key_metrics, lang, intelligence
+        ),
         key_metrics=key_metrics,
-        raw={"financials": company, "valuation": value, "financial_health": health, "risk": risks},
+        raw={
+            "financials": company,
+            "valuation": value,
+            "valuation_intelligence": intelligence,
+            "financial_health": health,
+            "risk": risks,
+        },
     )
+
+
+def earnings_context(research_context: dict[str, Any] | None) -> dict[str, Any] | None:
+    if research_context is None:
+        return None
+    context = research_context.get("earnings_context")
+    return context if isinstance(context, dict) else None
 
 
 def important_metrics(company: dict[str, Any], value: dict[str, Any]) -> list[ReportMetric]:

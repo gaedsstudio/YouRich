@@ -8,11 +8,11 @@ English | [한국어](README_KO.md) | [日本語](README_JA.md) | [中文](READM
 
 YouRich does not provide its own AI model and it is not a standalone stock app. Claude Code or Codex handles reasoning and qualitative research; YouRich supplies the financial discipline underneath.
 
-**Current milestone: v0.5.0 — Earnings & Guidance Research**
+**Current milestone: v0.6.0 — Valuation Intelligence**
 
-v0.5.0 adds official earnings-release evidence, structured guidance records,
-guidance-change comparison, management commentary, and thesis-change context
-without replacing deterministic SEC financial values.
+v0.6.0 adds reverse DCF, scenario valuation, sensitivity analysis, and
+scenario-based margin-of-safety context while preserving official earnings and
+guidance evidence.
 
 [Why YouRich?](#why-not-just-ask-ai-directly) · [Architecture](#architecture) · [Capabilities](#capabilities) · [Quick Start](#quick-start) · [Research Layer](#v040-research-layer) · [Methodology](#methodology)
 

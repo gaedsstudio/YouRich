@@ -11,7 +11,8 @@ from _comparison_text import (
     risk_label,
     scenario_text,
 )
-from _report_format import multiple_or_percent, pct
+from _comparison_valuation import valuation_comparison_table
+from _report_format import pct
 
 
 def render_comparison_markdown(
@@ -120,20 +121,6 @@ def metric_comparison_table(
     return markdown_table(table_rows)
 
 
-def valuation_comparison_table(rows: list[dict[str, Any]], language: str) -> str:
-    labels = [
-        ("P/E(주가수익비율)" if language == "ko" else "P/E", "pe"),
-        ("잉여현금흐름 수익률" if language == "ko" else "FCF Yield", "fcf_yield"),
-    ]
-    table_rows = []
-    for label, key in labels:
-        table_rows.append(
-            {"항목" if language == "ko" else "Metric": label}
-            | {str(row.get("ticker", "")): valuation_metric(row, key) for row in rows}
-        )
-    return markdown_table(table_rows)
-
-
 def risk_comparison_table(rows: list[dict[str, Any]], language: str) -> str:
     label = "주요 위험" if language == "ko" else "Triggered risks"
     return markdown_table(
@@ -167,11 +154,6 @@ def methodology_table(rows: list[dict[str, Any]], language: str) -> str:
 def health_metric(row: dict[str, Any], key: str) -> str:
     metric = row.get("financial_quality", {}).get("metrics", {}).get(key, {})
     return pct(metric.get("value"))
-
-
-def valuation_metric(row: dict[str, Any], key: str) -> str:
-    metric = row.get("valuation", {}).get("metrics", {}).get(key, {})
-    return multiple_or_percent(metric.get("value"), key)
 
 
 def risk_summary(row: dict[str, Any], language: str) -> str:
