@@ -101,8 +101,9 @@ def metric(
     sources: dict[str, str | None] | None = None,
     periods: dict[str, str | None] | None = None,
     evidence_type: str = "derived_metric",
+    basis: str | None = None,
 ) -> dict[str, Any]:
-    return {
+    payload = {
         "type": evidence_type,
         "value": value,
         "formula": formula,
@@ -110,6 +111,9 @@ def metric(
         "sources": {key: item for key, item in (sources or {}).items() if item is not None},
         "periods": {key: item for key, item in (periods or {}).items() if item is not None},
     }
+    if basis is not None:
+        payload["basis"] = basis
+    return payload
 
 
 def add_input_arg(parser: argparse.ArgumentParser) -> None:

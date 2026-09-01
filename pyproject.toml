@@ -1,6 +1,6 @@
 [project]
 name = "yourich"
-version = "0.3.1"
+version = "0.4.1"
 description = "Open-source investment research skills for Claude Code and Codex."
 readme = "README.md"
 requires-python = ">=3.11"

@@ -12,6 +12,20 @@ from _core import (
     sqrt_decimal,
     write_json,
 )
+from _valuation_basis import (
+    LATEST_SNAPSHOT_BASIS,
+    MARKET_SNAPSHOT_BASIS,
+    annual_fallback_warnings,
+    earnings_yield_spec,
+    fcf_yield_spec,
+    has_currency_mismatch,
+    metric_periods,
+    normalized_eps,
+    pe_spec,
+    provider_warnings,
+    ps_spec,
+    sources,
+)
 
 
 def valuation(company: dict[str, object]) -> dict[str, object]:
@@ -26,22 +40,31 @@ def valuation(company: dict[str, object]) -> dict[str, object]:
     book = decimal_or_none(company.get("book_value_per_share"))
     field_sources = company.get("field_sources", {})
     fact_metadata = company.get("fact_metadata", {})
-    warnings = provider_warnings(company)
+    warnings = provider_warnings(company) + annual_fallback_warnings(fact_metadata)
     if has_currency_mismatch(company):
         price = None
         market_cap = None
         warnings.append("CURRENCY_MISMATCH")
-    normalized_eps = normalized_eps_value(company)
+    eps_context = normalized_eps(company, fact_metadata)
+    normalized_eps_value = eps_context.value
     graham = sqrt_decimal(
-        None if normalized_eps is None or book is None else Decimal("22.5") * normalized_eps * book
+        None
+        if normalized_eps_value is None or book is None
+        else Decimal("22.5") * normalized_eps_value * book
     )
     ncav = None if assets_current is None or liabilities is None else assets_current - liabilities
     ncav_per_share = ratio(ncav, shares)
     intrinsic = (
-        None if normalized_eps is None or normalized_eps <= 0 else normalized_eps * Decimal("12")
+        None
+        if normalized_eps_value is None or normalized_eps_value <= 0
+        else normalized_eps_value * Decimal("12")
     )
     reference = intrinsic if intrinsic is not None else graham
     margin = None if reference is None or price is None else percent(reference - price, reference)
+    pe = pe_spec(fact_metadata)
+    ps = ps_spec(fact_metadata)
+    fcf_yield = fcf_yield_spec(fact_metadata)
+    earnings_yield = earnings_yield_spec(fact_metadata)
     return {
         "ticker": company.get("ticker"),
         "metrics": {
@@ -55,13 +78,15 @@ def valuation(company: dict[str, object]) -> dict[str, object]:
                     shares_outstanding="shares_outstanding",
                 ),
                 metric_periods(fact_metadata, price="current_price", shares="shares_outstanding"),
+                basis=MARKET_SNAPSHOT_BASIS,
             ),
             "pe": metric(
                 ratio(price, eps),
-                "price / ttm diluted eps",
-                {"price": price, "ttm_diluted_eps": eps},
+                pe.formula,
+                {"price": price, pe.input_name: eps},
                 sources(field_sources, price="current_price", eps="eps"),
                 metric_periods(fact_metadata, price="current_price", eps="eps"),
+                basis=pe.basis,
             ),
             "pb": metric(
                 ratio(price, book),
@@ -78,34 +103,38 @@ def valuation(company: dict[str, object]) -> dict[str, object]:
                     equity="shareholder_equity",
                     shares="shares_outstanding",
                 ),
+                basis=LATEST_SNAPSHOT_BASIS,
             ),
             "ps": metric(
                 ratio(market_cap, revenue),
-                "market cap / ttm revenue",
-                {"market_cap": market_cap, "ttm_revenue": revenue},
+                ps.formula,
+                {"market_cap": market_cap, ps.input_name: revenue},
                 sources(field_sources, market_cap="market_cap", revenue="revenue"),
                 metric_periods(fact_metadata, price="current_price", revenue="revenue"),
+                basis=ps.basis,
             ),
             "fcf_yield": metric(
                 percent(fcf, market_cap),
-                "ttm free cash flow / market cap * 100",
-                {"ttm_free_cash_flow": fcf, "market_cap": market_cap},
+                fcf_yield.formula,
+                {fcf_yield.input_name: fcf, "market_cap": market_cap},
                 sources(field_sources, free_cash_flow="free_cash_flow", market_cap="market_cap"),
                 metric_periods(
                     fact_metadata,
                     price="current_price",
                     fcf="free_cash_flow",
                 ),
+                basis=fcf_yield.basis,
             ),
             "earnings_yield": metric(
                 percent(decimal_or_none(company.get("net_income")), market_cap),
-                "ttm net income / market cap * 100",
+                earnings_yield.formula,
                 {
-                    "ttm_net_income": decimal_or_none(company.get("net_income")),
+                    earnings_yield.input_name: decimal_or_none(company.get("net_income")),
                     "market_cap": market_cap,
                 },
                 sources(field_sources, net_income="net_income", market_cap="market_cap"),
                 metric_periods(fact_metadata, price="current_price", net_income="net_income"),
+                basis=earnings_yield.basis,
             ),
             "ncav": metric(
                 ncav,
@@ -139,15 +168,17 @@ def valuation(company: dict[str, object]) -> dict[str, object]:
                     field_sources, price="current_price", ncav_per_share="computed:ncav_per_share"
                 ),
                 metric_periods(fact_metadata, price="current_price", shares="shares_outstanding"),
+                basis=LATEST_SNAPSHOT_BASIS,
             ),
             "graham_number": metric(
                 graham,
                 "sqrt(22.5 * normalized eps * book value per share)",
-                {"normalized_eps": normalized_eps, "book_value_per_share": book},
+                {"normalized_eps": normalized_eps_value, "book_value_per_share": book},
                 sources(
                     field_sources, normalized_eps="eps", book_value_per_share="book_value_per_share"
                 ),
                 metric_periods(fact_metadata, eps="eps", equity="shareholder_equity"),
+                basis=eps_context.basis,
             ),
             "margin_of_safety": metric(
                 margin,
@@ -159,9 +190,14 @@ def valuation(company: dict[str, object]) -> dict[str, object]:
                     price="current_price",
                 ),
                 metric_periods(fact_metadata, price="current_price", eps="eps"),
+                basis=eps_context.basis,
             ),
             "normalized_eps": metric(
-                normalized_eps, "average available EPS, else latest EPS", {"eps": eps}
+                normalized_eps_value,
+                eps_context.formula,
+                {"eps": normalized_eps_value},
+                periods=metric_periods(fact_metadata, eps="eps"),
+                basis=eps_context.basis,
             ),
             "simple_dcf": metric(
                 None, "not calculated without sufficient FCF growth assumptions", {}
@@ -173,68 +209,6 @@ def valuation(company: dict[str, object]) -> dict[str, object]:
         "data_freshness": company.get("data_freshness"),
         "data_quality": company.get("data_quality"),
     }
-
-
-def normalized_eps_value(company: dict[str, object]) -> Decimal | None:
-    annuals = company.get("annuals")
-    values: list[Decimal] = []
-    if isinstance(annuals, list):
-        for item in annuals:
-            if isinstance(item, dict):
-                value = decimal_or_none(item.get("eps"))
-                if value is not None:
-                    values.append(value)
-    if values:
-        return sum(values, Decimal("0")) / Decimal(len(values))
-    return decimal_or_none(company.get("eps"))
-
-
-def sources(field_sources: object, **fields: str) -> dict[str, str | None]:
-    if not isinstance(field_sources, dict):
-        return {}
-    resolved = {}
-    for output_name, field_name in fields.items():
-        if field_name.startswith("computed:"):
-            resolved[output_name] = field_name
-        else:
-            value = field_sources.get(field_name)
-            resolved[output_name] = str(value) if value is not None else None
-    return resolved
-
-
-def metric_periods(fact_metadata: object, **fields: str) -> dict[str, str | None]:
-    if not isinstance(fact_metadata, dict):
-        return {}
-    periods = {}
-    for output_name, field_name in fields.items():
-        item = fact_metadata.get(field_name)
-        if not isinstance(item, dict):
-            continue
-        periods[f"{output_name}_basis"] = str(item.get("basis")) if item.get("basis") else None
-        periods[f"{output_name}_end"] = (
-            str(item.get("period_end")) if item.get("period_end") else None
-        )
-        periods[f"{output_name}_filed"] = str(item.get("filed")) if item.get("filed") else None
-        periods[f"{output_name}_date"] = (
-            str(item.get("price_date")) if item.get("price_date") else None
-        )
-    return periods
-
-
-def provider_warnings(company: dict[str, object]) -> list[str]:
-    provider = company.get("provider")
-    if not isinstance(provider, dict):
-        return []
-    warnings = provider.get("warnings")
-    if not isinstance(warnings, list):
-        return []
-    return [str(item) for item in warnings]
-
-
-def has_currency_mismatch(company: dict[str, object]) -> bool:
-    financial = company.get("financial_currency")
-    market = company.get("market_currency")
-    return isinstance(financial, str) and isinstance(market, str) and financial != market
 
 
 def valuation_conclusion(

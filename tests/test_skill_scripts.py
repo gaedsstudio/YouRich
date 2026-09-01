@@ -27,6 +27,15 @@ def test_valuation_calculates_core_price_metrics() -> None:
     assert Decimal(metrics["earnings_yield"]["value"]) == Decimal("10.0")
     assert Decimal(metrics["price_to_ncav"]["value"]) == Decimal("5")
     assert metrics["pe"]["sources"]["price"] == "market-source"
+    assert metrics["pe"]["basis"] == "ttm"
+    assert metrics["pe"]["formula"] == "price / ttm diluted eps"
+    assert "ttm_diluted_eps" in metrics["pe"]["inputs"]
+    assert metrics["ps"]["formula"] == "market cap / ttm revenue"
+    assert "ttm_revenue" in metrics["ps"]["inputs"]
+    assert metrics["fcf_yield"]["formula"] == "ttm free cash flow / market cap * 100"
+    assert "ttm_free_cash_flow" in metrics["fcf_yield"]["inputs"]
+    assert metrics["earnings_yield"]["formula"] == "ttm net income / market cap * 100"
+    assert "ttm_net_income" in metrics["earnings_yield"]["inputs"]
 
 
 def test_valuation_calculates_graham_ncav_and_margin_of_safety() -> None:
@@ -41,6 +50,8 @@ def test_valuation_calculates_graham_ncav_and_margin_of_safety() -> None:
     assert Decimal(metrics["margin_of_safety"]["value"]) == Decimal(
         "16.66666666666666666666666667",
     )
+    assert metrics["normalized_eps"]["formula"] == "current selected EPS"
+    assert metrics["normalized_eps"]["basis"] == "ttm"
 
 
 def test_financial_health_calculates_liquidity_and_leverage() -> None:
@@ -95,6 +106,56 @@ def test_missing_eps_and_book_do_not_fabricate_valuation_metrics() -> None:
     assert metrics["pe"]["value"] is None
     assert metrics["pb"]["value"] is None
     assert metrics["graham_number"]["value"] is None
+
+
+def test_annual_eps_fallback_does_not_label_pe_as_ttm() -> None:
+    payload = annual_fallback_payload()
+
+    result = valuation_module.valuation(payload)
+
+    pe = result["metrics"]["pe"]
+    assert pe["basis"] == "latest_annual"
+    assert pe["formula"] == "price / latest annual diluted eps"
+    assert "latest_annual_diluted_eps" in pe["inputs"]
+    assert "ttm_diluted_eps" not in pe["inputs"]
+    assert "TTM_INCOMPLETE_USING_ANNUAL_FALLBACK" in cast(list[str], result["warnings"])
+
+
+def test_annual_revenue_fallback_does_not_label_ps_as_ttm() -> None:
+    payload = annual_fallback_payload()
+
+    result = valuation_module.valuation(payload)
+
+    ps = result["metrics"]["ps"]
+    assert ps["basis"] == "latest_annual"
+    assert ps["formula"] == "market cap / latest annual revenue"
+    assert "latest_annual_revenue" in ps["inputs"]
+    assert "ttm_revenue" not in ps["inputs"]
+
+
+def test_annual_fcf_and_net_income_fallbacks_do_not_label_yields_as_ttm() -> None:
+    payload = annual_fallback_payload()
+
+    result = valuation_module.valuation(payload)
+
+    fcf_yield = result["metrics"]["fcf_yield"]
+    earnings_yield = result["metrics"]["earnings_yield"]
+    assert fcf_yield["basis"] == "latest_annual"
+    assert fcf_yield["formula"] == "latest annual free cash flow / market cap * 100"
+    assert "latest_annual_free_cash_flow" in fcf_yield["inputs"]
+    assert "ttm_free_cash_flow" not in fcf_yield["inputs"]
+    assert earnings_yield["basis"] == "latest_annual"
+    assert earnings_yield["formula"] == "latest annual net income / market cap * 100"
+    assert "latest_annual_net_income" in earnings_yield["inputs"]
+    assert "ttm_net_income" not in earnings_yield["inputs"]
+
+
+def test_pb_and_market_cap_keep_snapshot_basis() -> None:
+    result = valuation_module.valuation(sample_payload())
+
+    metrics = result["metrics"]
+    assert metrics["pb"]["basis"] == "latest_snapshot"
+    assert metrics["market_cap"]["basis"] == "market_snapshot"
 
 
 def test_skill_trigger_examples_match_expected_boundary() -> None:
@@ -163,5 +224,25 @@ def sample_payload() -> dict[str, object]:
         },
         "market_quote": {"timestamp": "2026-08-28", "provider": "test"},
         "data_quality": {"currency_match": True},
+        "fact_metadata": {
+            "current_price": {"basis": "market_quote", "price_date": "2026-08-28"},
+            "market_cap": {"basis": "market_snapshot"},
+            "revenue": {"basis": "ttm", "period_end": "2026-06-30"},
+            "net_income": {"basis": "ttm", "period_end": "2026-06-30"},
+            "eps": {"basis": "ttm", "period_end": "2026-06-30"},
+            "free_cash_flow": {"basis": "ttm"},
+            "shareholder_equity": {"basis": "latest_snapshot", "period_end": "2026-06-30"},
+            "shares_outstanding": {"basis": "latest_snapshot", "period_end": "2026-06-30"},
+        },
         "annuals": [],
     }
+
+
+def annual_fallback_payload() -> dict[str, object]:
+    payload = sample_payload()
+    payload["fact_metadata"]["revenue"]["basis"] = "latest_annual"
+    payload["fact_metadata"]["net_income"]["basis"] = "latest_annual"
+    payload["fact_metadata"]["eps"]["basis"] = "latest_annual"
+    payload["fact_metadata"]["free_cash_flow"]["basis"] = "latest_annual"
+    payload["data_quality"] = {"currency_match": True, "ttm_coverage": "partial"}
+    return payload

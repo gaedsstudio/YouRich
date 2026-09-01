@@ -159,10 +159,11 @@ def apply_derived_values(fields: dict[str, Any], selections: dict[str, Any]) -> 
     fields["free_cash_flow"] = free_cash_flow(fields)
     if fields["free_cash_flow"] is not None:
         fields["field_sources"]["free_cash_flow"] = (
-            "computed: ttm_operating_cash_flow - abs(ttm_capex)"
+            "computed: operating_cash_flow - abs(capital_expenditures)"
         )
         fields["fact_metadata"]["free_cash_flow"] = derived_metadata(
-            "ttm", ("operating_cash_flow", "capital_expenditures")
+            free_cash_flow_basis(selections),
+            ("operating_cash_flow", "capital_expenditures"),
         )
     fields["book_value_per_share"] = ratio(
         fields["shareholder_equity"], fields["shares_outstanding"]
@@ -237,6 +238,18 @@ def derived_metadata(basis: str, fields: tuple[str, ...]) -> dict[str, Any]:
         "derived_from": list(fields),
         "confidence": "HIGH",
     }
+
+
+def free_cash_flow_basis(selections: dict[str, Any]) -> str:
+    operating = selections.get("operating_cash_flow")
+    capex = selections.get("capital_expenditures")
+    if operating is None or capex is None:
+        return "derived"
+    if operating.basis == "ttm" and capex.basis == "ttm":
+        return "ttm"
+    if operating.basis == "latest_annual" and capex.basis == "latest_annual":
+        return "latest_annual"
+    return "derived"
 
 
 def eps_method(fields: dict[str, Any], selections: dict[str, Any]) -> str | None:

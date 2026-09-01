@@ -26,6 +26,20 @@ Bundled scripts emit JSON. Decimal values are serialized as strings.
 - `data_freshness`
 - `data_quality`
 
+Each valuation metric should expose:
+
+- `value`
+- `formula`
+- `inputs`
+- `sources`
+- `periods`
+- `basis`
+
+Basis values include `ttm`, `latest_annual`, `latest_snapshot`,
+`market_snapshot`, `derived`, and `unavailable`. Price-sensitive duration
+metrics must use the selected field basis from `fact_metadata`; annual fallback
+values must not be labeled as TTM.
+
 `financial_health.py` returns:
 
 - `ticker`
