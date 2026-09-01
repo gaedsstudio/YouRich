@@ -8,12 +8,10 @@
 
 YouRich 不提供自己的 AI 模型，也不是一个独立的股票分析应用。Claude Code 或 Codex 负责推理与定性研究，YouRich 负责底层的金融计算与验证纪律。
 
-**当前里程碑：v0.4.1 — Research Layer + Financial Correctness**
+**当前里程碑：v0.4.2 — TTM Selection Correctness Hotfix**
 
-v0.4 增加 SEC 10-K/10-Q filing 获取、section parsing、compact research
-context、business quality 与 management / capital allocation evidence。
-v0.3.1 修复重叠 SEC duration fact 与 TTM reconstruction。v0.4.1 将两者结合，
-并让 valuation metadata 与实际 basis 保持一致。
+v0.4.2 修复 annual-plus-YTD SEC fact 的 rolling TTM 选择，并让 valuation
+label 始终跟随每个 metric JSON 的明确 basis。
 
 ---
 

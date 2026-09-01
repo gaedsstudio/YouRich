@@ -96,12 +96,15 @@ and provider warnings first. Mention incomplete TTM coverage, stale financial
 data, restatements, currency mismatch, and low-confidence mappings. Do not
 present low-confidence SEC mappings as certain facts. Distinguish reported SEC
 facts from derived metrics and qualitative interpretation.
+Never describe a metric as TTM unless the metric JSON basis is `ttm`. Do not
+infer TTM status from the existence of a numeric value.
 
 `fetch_filings.py` uses SEC EDGAR submissions and archive documents. Filing
 metadata is cached for 24 hours; primary documents are cached for seven days.
-Set `YOURICH_SEC_USER_AGENT` to configure the EDGAR User-Agent. If a filing
-section cannot be parsed, preserve the warning `SECTION_PARSE_INCOMPLETE` and
-avoid pretending the missing section was reviewed.
+Set `YOURICH_SEC_USER_AGENT` to configure the EDGAR User-Agent with your own
+requester identifier. Do not invent a fake contact address. If a filing section
+cannot be parsed, preserve the warning `SECTION_PARSE_INCOMPLETE` and avoid
+pretending the missing section was reviewed.
 
 `research_context.py` builds a context-budget-aware evidence bundle. It must not
 dump full filings into the final prompt. Every qualitative claim follows

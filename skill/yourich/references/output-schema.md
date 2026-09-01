@@ -16,6 +16,25 @@ Bundled scripts emit JSON. Decimal values are serialized as strings.
 - `missing_fields`
 - `provider`
 
+Each selected financial fact in `fact_metadata` should expose:
+
+- `basis`
+- `period_start`
+- `period_end`
+- `component_periods`
+- `coverage`
+- `source_facts`
+
+Duration-field basis values include `ttm`, `latest_annual`, `quarter`,
+`ytd_6m`, `ytd_9m`, and `unavailable`. Additive TTM fields may be reconstructed
+from four discrete quarters or from `latest annual + current YTD - prior-year
+comparable YTD` when the source facts are compatible and fiscal calendars align.
+Annual facts must not use `basis=ttm`.
+
+`data_quality.ttm_coverage_by_field` reports per-field coverage for revenue,
+net income, EPS, operating cash flow, and capital expenditures. The global
+`data_quality.ttm_coverage` value is a derived summary.
+
 `valuation.py` returns:
 
 - `ticker`
@@ -39,6 +58,8 @@ Basis values include `ttm`, `latest_annual`, `latest_snapshot`,
 `market_snapshot`, `derived`, and `unavailable`. Price-sensitive duration
 metrics must use the selected field basis from `fact_metadata`; annual fallback
 values must not be labeled as TTM.
+Never describe a metric as TTM unless that metric JSON has `basis` set to
+`ttm`.
 
 `financial_health.py` returns:
 

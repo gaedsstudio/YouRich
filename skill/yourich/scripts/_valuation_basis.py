@@ -42,7 +42,7 @@ def basis_for(fact_metadata: object, field: str, fallback: str = UNAVAILABLE_BAS
 def pe_spec(fact_metadata: object) -> BasisMetricSpec:
     basis = basis_for(fact_metadata, "eps")
     match basis:
-        case "ttm" | "diluted_ttm":
+        case "ttm":
             return BasisMetricSpec("price / ttm diluted eps", "ttm_diluted_eps", TTM_BASIS)
         case "latest_annual":
             return BasisMetricSpec(
@@ -104,7 +104,7 @@ def duration_spec(
     fallback_input: str,
 ) -> BasisMetricSpec:
     match basis:
-        case "ttm" | "diluted_ttm":
+        case "ttm":
             return BasisMetricSpec(ttm_formula, ttm_input, ttm_basis)
         case "latest_annual":
             return BasisMetricSpec(annual_formula, annual_input, LATEST_ANNUAL_BASIS)

@@ -8,13 +8,10 @@
 
 YouRich는 자체 AI 모델을 제공하지 않으며 독립적인 주식 분석 앱도 아닙니다. Claude Code 또는 Codex가 추론과 정성적 리서치를 담당하고, YouRich는 그 아래에서 금융 계산과 검증 절차를 담당합니다.
 
-**현재 버전: v0.4.1 — Research Layer + Financial Correctness**
+**현재 버전: v0.4.2 — TTM Selection Correctness Hotfix**
 
-v0.4는 SEC 10-K/10-Q 공시 수집, 섹션 파싱, compact research context,
-business-quality 검토, management/capital allocation 근거를 추가했습니다.
-v0.3.1은 겹치는 SEC duration fact와 TTM 재구성 오류를 수정했습니다.
-v0.4.1은 두 변경을 결합하고 valuation metadata가 실제 basis를 따르도록
-정리합니다.
+v0.4.2는 annual-plus-YTD SEC fact로 rolling TTM을 올바르게 선택하고,
+valuation label이 각 metric JSON의 명시적 basis를 따르도록 정리합니다.
 
 [왜 YouRich인가?](#그냥-ai에게-물어보면-안-되나요) · [아키텍처](#아키텍처) · [기능](#기능) · [빠른 시작](#빠른-시작) · [v0.3 데이터 정확성](#v030-financial-data-correctness) · [방법론](#방법론)
 

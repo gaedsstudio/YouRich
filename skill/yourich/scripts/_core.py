@@ -15,7 +15,8 @@ from urllib.request import Request, urlopen
 
 ZERO = Decimal("0")
 HUNDRED = Decimal("100")
-SEC_AGENT = "YouRich/0.4 research-layer"
+SEC_AGENT = "YouRich/0.4.2 research-layer"
+SEC_USER_AGENT_WARNING = "SEC_USER_AGENT_NOT_CONFIGURED"
 MAX_TICKER_LENGTH = 12
 MARKET_QUOTE_TTL_SECONDS = 900
 FUNDAMENTALS_TTL_SECONDS = 86400
@@ -191,4 +192,17 @@ def cache_path(cache_key: str) -> Path:
 
 
 def sec_user_agent() -> str:
-    return os.environ.get("YOURICH_SEC_USER_AGENT", SEC_AGENT).strip() or SEC_AGENT
+    configured = os.environ.get("YOURICH_SEC_USER_AGENT", "").strip()
+    if not configured:
+        return SEC_AGENT
+    try:
+        configured.encode("latin-1")
+    except UnicodeEncodeError as exc:
+        raise ToolError("YOURICH_SEC_USER_AGENT must use Latin-1 compatible characters") from exc
+    return configured
+
+
+def sec_user_agent_warnings() -> list[str]:
+    if os.environ.get("YOURICH_SEC_USER_AGENT", "").strip():
+        return []
+    return [SEC_USER_AGENT_WARNING]

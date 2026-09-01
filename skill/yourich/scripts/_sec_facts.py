@@ -40,7 +40,7 @@ def select_field(facts: Any, field: str, concepts: tuple[Concept, ...]) -> Field
     for rank, concept in enumerate(concepts):
         raw = parse_field_facts(facts, field, (concept,), base_rank=rank)
         candidates = dedupe(raw)
-        ttm = select_ttm(candidates)
+        ttm = select_ttm(raw)
         annual = select_latest_annual(candidates)
         if ttm.value is not None and is_current_enough(ttm, annual):
             ttm_candidates.append(with_restatement(ttm, raw))
@@ -170,7 +170,15 @@ def select_latest_annual(facts: list[Fact]) -> FieldSelection:
         by_year[fact.fy] = fact
     annual = sorted(by_year.values(), key=sort_key, reverse=True)
     if not annual:
-        return FieldSelection(None, "latest_annual", "LOW", (), restated=False, previous_value=None)
+        return FieldSelection(
+            None,
+            "latest_annual",
+            "LOW",
+            (),
+            restated=False,
+            previous_value=None,
+            coverage="partial",
+        )
     selected = annual[0]
     restated, previous = restatement_for(annual, selected)
     return FieldSelection(
@@ -180,22 +188,27 @@ def select_latest_annual(facts: list[Fact]) -> FieldSelection:
         (selected,),
         restated=restated,
         previous_value=previous,
+        coverage="partial",
     )
 
 
 def select_eps(facts: list[Fact]) -> FieldSelection:
     direct = [fact for fact in facts if fact.unit == "USD/shares"]
-    ttm = select_ttm(direct)
-    if ttm.value is not None:
+    ttm = select_ttm(direct, allow_annual_ytd_bridge=False)
+    annual = select_latest_annual(direct)
+    if ttm.value is not None and is_current_enough(ttm, annual):
         return FieldSelection(
             ttm.value,
-            "diluted_ttm",
+            "ttm",
             ttm.confidence,
             ttm.facts,
             restated=False,
             previous_value=None,
+            coverage=ttm.coverage,
+            period_start=ttm.period_start,
+            period_end=ttm.period_end,
         )
-    return select_latest_annual(direct)
+    return annual
 
 
 def derived_eps(
@@ -245,6 +258,10 @@ def with_restatement(selection: FieldSelection, raw_facts: list[Fact]) -> FieldS
         selection.facts,
         restated=restated,
         previous_value=previous,
+        coverage=selection.coverage,
+        period_start=selection.period_start,
+        period_end=selection.period_end,
+        source_fact_items=selection.source_fact_items,
     )
 
 
@@ -255,8 +272,8 @@ def best_selection(selections: list[FieldSelection]) -> FieldSelection:
 def selection_key(selection: FieldSelection) -> tuple[str, int]:
     if not selection.facts:
         return ("", 0)
-    fact = selection.facts[0]
-    return (fact.end, -fact.concept_rank)
+    period_end = selection.period_end or max(fact.end for fact in selection.facts)
+    return (period_end, -selection.facts[0].concept_rank)
 
 
 def sort_key(fact: Fact) -> tuple[str, str, int, int]:

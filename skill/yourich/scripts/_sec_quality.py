@@ -59,6 +59,7 @@ def data_quality(company: dict[str, Any]) -> dict[str, Any]:
         "market_data": "delayed" if company.get("market_quote") else "missing",
         "fundamentals": "stale" if "STALE_FINANCIAL_DATA" in warnings else "current",
         "ttm_coverage": ttm_coverage(company),
+        "ttm_coverage_by_field": ttm_coverage_by_field(company),
         "mapping_confidence": mapping_confidence(company),
         "currency_match": "CURRENCY_MISMATCH" not in warnings,
         "restatement_risk": restatement_risk(warnings),
@@ -83,16 +84,30 @@ def missing_fields(company: dict[str, Any]) -> list[str]:
 
 
 def ttm_coverage(company: dict[str, Any]) -> str:
-    metadata = company.get("fact_metadata", {})
-    if not isinstance(metadata, dict):
+    coverage = ttm_coverage_by_field(company)
+    if not coverage:
         return "missing"
-    required = ("revenue", "net_income", "eps", "operating_cash_flow", "capital_expenditures")
-    bases = [
-        metadata[field].get("basis") for field in required if isinstance(metadata.get(field), dict)
-    ]
-    if bases and all(str(basis).startswith("ttm") or basis == "diluted_ttm" for basis in bases):
+    if all(status == "complete" for status in coverage.values()):
         return "complete"
     return "partial"
+
+
+def ttm_coverage_by_field(company: dict[str, Any]) -> dict[str, str]:
+    metadata = company.get("fact_metadata", {})
+    if not isinstance(metadata, dict):
+        return {}
+    required = ("revenue", "net_income", "eps", "operating_cash_flow", "capital_expenditures")
+    coverage: dict[str, str] = {}
+    for field in required:
+        item = metadata.get(field)
+        if not isinstance(item, dict):
+            coverage[field] = "missing"
+            continue
+        value = item.get("coverage")
+        coverage[field] = (
+            str(value) if value else ("complete" if item.get("basis") == "ttm" else "partial")
+        )
+    return coverage
 
 
 def mapping_confidence(company: dict[str, Any]) -> str:

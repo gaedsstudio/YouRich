@@ -21,8 +21,9 @@ The SEC provider uses:
 - `https://data.sec.gov/submissions/CIK##########.json`
 - `https://www.sec.gov/Archives/edgar/data/...`
 
-Set `YOURICH_SEC_USER_AGENT` to configure the SEC User-Agent. Do not hardcode a
-personal contact string into the repository.
+Set `YOURICH_SEC_USER_AGENT` to configure the SEC User-Agent with the requester's
+identifier. Do not hardcode or invent a personal contact string in the
+repository or in analysis commands.
 
 ## Cache
 

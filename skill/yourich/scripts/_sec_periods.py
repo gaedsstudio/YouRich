@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 from itertools import pairwise
 
 from _core import ZERO
+from _sec_ttm_bridge import select_annual_ytd_ttm
 from _sec_types import (
     FORM_RANK,
     TTM_QUARTERS,
@@ -32,22 +33,29 @@ def reconstruct_discrete_quarters(facts: list[Fact]) -> list[Fact]:
     return dedupe_quarters(quarters)
 
 
-def select_ttm(facts: list[Fact]) -> FieldSelection:
+def select_ttm(facts: list[Fact], *, allow_annual_ytd_bridge: bool = True) -> FieldSelection:
     quarters = reconstruct_discrete_quarters(facts)
     sequence = sorted(quarters, key=sort_key, reverse=True)[:TTM_QUARTERS]
-    if len(sequence) != TTM_QUARTERS or has_period_issue(sequence):
-        return FieldSelection(
-            None, "ttm", "LOW", tuple(sequence), restated=False, previous_value=None
+    selections = [select_annual_ytd_ttm(facts)] if allow_annual_ytd_bridge else []
+    if len(sequence) == TTM_QUARTERS and not has_period_issue(sequence):
+        selections.append(
+            FieldSelection(
+                sum((fact.value for fact in sequence), ZERO),
+                "ttm",
+                min_confidence(sequence),
+                tuple(sequence),
+                restated=False,
+                previous_value=None,
+                coverage="complete",
+                period_start=min(fact.start or fact.end for fact in sequence),
+                period_end=max(fact.end for fact in sequence),
+            )
         )
-    value = sum((fact.value for fact in sequence), ZERO)
-    confidence = min_confidence(sequence)
+    complete = [selection for selection in selections if selection.value is not None]
+    if complete:
+        return sorted(complete, key=selection_key, reverse=True)[0]
     return FieldSelection(
-        value,
-        "ttm",
-        confidence,
-        tuple(sequence),
-        restated=False,
-        previous_value=None,
+        None, "ttm", "LOW", tuple(sequence), restated=False, previous_value=None, coverage="partial"
     )
 
 
@@ -56,25 +64,22 @@ def is_current_enough(ttm: FieldSelection, annual: FieldSelection) -> bool:
         return True
     if not ttm.facts:
         return False
-    latest_ttm_end = max(fact.end for fact in ttm.facts)
-    return latest_ttm_end >= annual.facts[0].end
+    return selection_end(ttm) > selection_end(annual)
 
 
 def facts_by_year(facts: list[Fact]) -> dict[int, YearFacts]:
     by_year: dict[int, YearFacts] = {}
     for fact in facts:
         current = by_year.setdefault(fact.fy, YearFacts({}, None, None, None))
-        match fact.period_class:
-            case PeriodClass.QUARTER:
-                current.reported_quarters[fact.fp] = fact
-            case PeriodClass.YTD_6M:
-                by_year[fact.fy] = replace(current, ytd_6m=better_fact(current.ytd_6m, fact))
-            case PeriodClass.YTD_9M:
-                by_year[fact.fy] = replace(current, ytd_9m=better_fact(current.ytd_9m, fact))
-            case PeriodClass.ANNUAL:
-                by_year[fact.fy] = replace(current, annual=better_fact(current.annual, fact))
-            case PeriodClass.OTHER_DURATION | PeriodClass.INSTANT | PeriodClass.DERIVED_TTM:
-                continue
+        period_class = fact.period_class
+        if period_class == PeriodClass.QUARTER:
+            current.reported_quarters[fact.fp] = fact
+        if period_class == PeriodClass.YTD_6M:
+            by_year[fact.fy] = replace(current, ytd_6m=better_fact(current.ytd_6m, fact))
+        if period_class == PeriodClass.YTD_9M:
+            by_year[fact.fy] = replace(current, ytd_9m=better_fact(current.ytd_9m, fact))
+        if period_class == PeriodClass.ANNUAL:
+            by_year[fact.fy] = replace(current, annual=better_fact(current.annual, fact))
     return by_year
 
 
@@ -149,6 +154,22 @@ def has_bad_boundary(first: Fact, second: Fact) -> bool:
 
 def sort_key(fact: Fact) -> tuple[str, str, int, int]:
     return (fact.end, fact.filed, -FORM_RANK[fact.form], -fact.concept_rank)
+
+
+def selection_key(selection: FieldSelection) -> tuple[str, str, int]:
+    if not selection.facts:
+        return ("", "", 0)
+    return (
+        selection_end(selection),
+        max(fact.filed for fact in selection.facts),
+        -selection.facts[0].concept_rank,
+    )
+
+
+def selection_end(selection: FieldSelection) -> str:
+    if selection.period_end is not None:
+        return selection.period_end
+    return max((fact.end for fact in selection.facts), default="")
 
 
 def min_confidence(facts: list[Fact]) -> str:
