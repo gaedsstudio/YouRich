@@ -3,6 +3,7 @@ from typing import Any
 
 from _comparison_report import render_comparison_markdown
 from _core import ToolError, write_json
+from _research import build_research_context, parse_research_request
 from _sec import fetch_financials
 from financial_health import financial_health
 from risk import risk_checks
@@ -12,23 +13,26 @@ MIN_COMPARE_ARGS = 3
 MIN_COMPARE_ROWS = 2
 
 
-def compare(tickers: list[str]) -> list[dict[str, Any]]:
+def compare(tickers: list[str], include_research: bool = False) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for ticker in tickers:
         company = fetch_financials(ticker)
         valuation_result = valuation(company)
-        rows.append(
-            {
-                "company": company["company"],
-                "ticker": company["ticker"],
-                "valuation": valuation_result,
-                "financial_quality": financial_health(company),
-                "risk": risk_checks(company),
-                "missing_fields": company["missing_fields"],
-                "provider": company["provider"],
-                "comparison_basis": comparison_basis(valuation_result),
-            },
-        )
+        row = {
+            "company": company["company"],
+            "ticker": company["ticker"],
+            "valuation": valuation_result,
+            "financial_quality": financial_health(company),
+            "risk": risk_checks(company),
+            "missing_fields": company["missing_fields"],
+            "provider": company["provider"],
+            "comparison_basis": comparison_basis(valuation_result),
+        }
+        if include_research:
+            row["research_context"] = build_research_context(
+                parse_research_request(ticker, "thesis", 2, 12)
+            )
+        rows.append(row)
     warnings = comparison_warnings(rows)
     if warnings:
         for row in rows:
@@ -81,7 +85,7 @@ def main() -> int:
     try:
         if len(args.tickers) < MIN_COMPARE_ARGS - 1:
             raise ToolError("compare requires at least two tickers")
-        rows = compare(args.tickers)
+        rows = compare(args.tickers, include_research=args.format == "markdown")
         if args.format == "markdown":
             print(render_comparison_markdown(rows, args.language), end="")
         else:

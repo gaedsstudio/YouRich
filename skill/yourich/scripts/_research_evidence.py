@@ -32,7 +32,15 @@ def section_evidence(filing: Filing, sections: list[FilingSection]) -> list[Rese
 
 def core_section_evidence(filing: Filing, section: FilingSection) -> list[ResearchEvidence]:
     if section.name == "business":
-        business = [evidence_from_section(filing, section, "business_model", HIGH)]
+        business = [
+            excerpt_evidence(
+                filing,
+                section,
+                "business_model",
+                ("revenue", "sales", "services", "products", "platform"),
+                HIGH,
+            )
+        ]
         business.extend(
             topic_evidence(filing, section, topic)
             for topic in BUSINESS_TOPICS
@@ -40,7 +48,15 @@ def core_section_evidence(filing: Filing, section: FilingSection) -> list[Resear
         )
         return business
     if section.name == "risk_factors":
-        return [evidence_from_section(filing, section, "qualitative_risk", HIGH)]
+        return [
+            excerpt_evidence(
+                filing,
+                section,
+                "qualitative_risk",
+                ("risk", "competition", "supply", "demand"),
+                HIGH,
+            )
+        ]
     if section.name == "mda":
         return [evidence_from_section(filing, section, "mda_financial_narrative", HIGH)]
     if section.name == "financial_statements":
@@ -52,5 +68,17 @@ def core_section_evidence(filing: Filing, section: FilingSection) -> list[Resear
 
 def topic_evidence(filing: Filing, section: FilingSection, claim_type: str) -> ResearchEvidence:
     excerpt = section_excerpt(section, (claim_type.replace("_", " "), claim_type.split("_")[0]))
-    narrowed = FilingSection(name=section.name, item=section.item, text=excerpt)
-    return evidence_from_section(filing, narrowed, claim_type, MEDIUM)
+    return excerpt_evidence(filing, section, claim_type, (claim_type,), MEDIUM, excerpt)
+
+
+def excerpt_evidence(
+    filing: Filing,
+    section: FilingSection,
+    claim_type: str,
+    terms: tuple[str, ...],
+    confidence: str,
+    excerpt: str | None = None,
+) -> ResearchEvidence:
+    selected_excerpt = excerpt if excerpt is not None else section_excerpt(section, terms)
+    narrowed = FilingSection(name=section.name, item=section.item, text=selected_excerpt)
+    return evidence_from_section(filing, narrowed, claim_type, confidence)

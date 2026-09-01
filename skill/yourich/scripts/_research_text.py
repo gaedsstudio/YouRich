@@ -49,8 +49,17 @@ def section_excerpt(section: FilingSection, terms: tuple[str, ...]) -> str:
         if index >= 0:
             start = max(0, index - 220)
             end = min(len(section.text), index + 680)
-            return section.text[start:end].strip()
+            return section.text[excerpt_start(section.text, start, index) : end].strip()
     return section.text[:900].strip()
+
+
+def excerpt_start(text: str, start: int, index: int) -> int:
+    sentence = text.rfind(". ", start, index)
+    if sentence >= 0:
+        return sentence + 2
+    while start < index and not text[start].isspace():
+        start += 1
+    return start
 
 
 def has_topic(section: FilingSection, topic: str) -> bool:

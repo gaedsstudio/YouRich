@@ -2,55 +2,79 @@ from __future__ import annotations
 
 from typing import Any
 
-from _report_format import basis_label, korean_basis_label, multiple_or_percent, pct
+from _comparison_model import build_comparison_report
+from _comparison_text import (
+    bullet_list,
+    change_text,
+    comparison_basis_label,
+    risk_label,
+    scenario_text,
+)
+from _report_format import multiple_or_percent, pct
 
 
-def render_comparison_markdown(rows: list[dict[str, Any]], language: str = "en") -> str:
+def render_comparison_markdown(
+    report: dict[str, Any] | list[dict[str, Any]], language: str = "en"
+) -> str:
+    model = report if isinstance(report, dict) else build_comparison_report(report)
     labels = comparison_labels(language)
-    tickers = [str(row.get("ticker", "")) for row in rows]
-    title = " vs ".join(tickers)
+    entries = model_entries(model)
     lines = [
-        f"# {title}",
+        f"# {model.get('title', '')}",
         "",
         f"## {labels['overall']}",
         "",
-        comparison_table(rows, language),
+        comparison_table(entries, language),
         "",
         f"## {labels['differences']}",
         "",
-        labels["differences_body"],
+        bullet_list(model.get("key_differences", []), language, labels["differences_body"]),
         "",
         f"## {labels['business']}",
         "",
-        entity_table(rows, labels["business_gap"]),
+        business_table(entries, labels["business_gap"], language),
         "",
         f"## {labels['financial']}",
         "",
-        metric_comparison_table(rows, ("net_margin", "fcf_margin"), language),
+        metric_comparison_table(entries, ("net_margin", "fcf_margin"), language),
         "",
         f"## {labels['valuation']}",
         "",
-        valuation_comparison_table(rows, language),
+        valuation_comparison_table(entries, language),
         "",
         f"## {labels['risks']}",
         "",
-        risk_comparison_table(rows, language),
+        risk_comparison_table(entries, language),
     ]
-    for ticker in tickers:
-        lines.extend(["", f"## {ticker} {labels['scenario']}", "", labels["scenario_body"]])
+    for entry in entries:
+        lines.extend(
+            [
+                "",
+                f"## {entry['ticker']} {labels['scenario']}",
+                "",
+                scenario_text(entry, labels, language),
+            ]
+        )
     lines.extend(
         [
             "",
             f"## {labels['conclusion']}",
             "",
-            labels["conclusion_body"],
+            bullet_list(model.get("conclusion", []), language, labels["conclusion_body"]),
             "",
             f"## {labels['methodology']}",
             "",
-            methodology_table(rows, language),
+            methodology_text(model, entries, language),
         ]
     )
     return "\n".join(lines).strip() + "\n"
+
+
+def model_entries(report: dict[str, Any]) -> list[dict[str, Any]]:
+    entries = report.get("entries", [])
+    return (
+        [entry for entry in entries if isinstance(entry, dict)] if isinstance(entries, list) else []
+    )
 
 
 def comparison_table(rows: list[dict[str, Any]], language: str) -> str:
@@ -73,11 +97,25 @@ def comparison_value(row: dict[str, Any], key: str, language: str) -> str:
     if key == "fcf_yield":
         metric = row.get("valuation", {}).get("metrics", {}).get("fcf_yield", {})
         return multiple_or_percent(metric.get("value"), "fcf_yield")
+    if key == "business":
+        value = row.get("business_quality")
+        if value:
+            return str(value)
     return "근거가 부족합니다." if language == "ko" else "Insufficient evidence"
 
 
-def entity_table(rows: list[dict[str, Any]], fallback: str) -> str:
-    return markdown_table([{str(row.get("ticker", "")): fallback for row in rows}])
+def business_table(rows: list[dict[str, Any]], fallback: str, language: str) -> str:
+    company = "기업" if language == "ko" else "Company"
+    judgment = "핵심 판단" if language == "ko" else "Key judgment"
+    return markdown_table(
+        [
+            {
+                company: str(row.get("ticker", "")),
+                judgment: str(row.get("business_quality") or fallback),
+            }
+            for row in rows
+        ]
+    )
 
 
 def metric_comparison_table(
@@ -122,10 +160,11 @@ def risk_comparison_table(rows: list[dict[str, Any]], language: str) -> str:
 
 
 def methodology_table(rows: list[dict[str, Any]], language: str) -> str:
-    label = "비교 기준" if language == "ko" else "Comparison basis"
+    basis = "비교 기준" if language == "ko" else "Comparison basis"
+    evidence = "근거 품질" if language == "ko" else "Evidence Quality"
     return markdown_table(
         [
-            {"항목" if language == "ko" else "Item": label}
+            {"항목" if language == "ko" else "Item": basis}
             | {
                 str(row.get("ticker", "")): str(
                     comparison_basis_label(
@@ -133,7 +172,9 @@ def methodology_table(rows: list[dict[str, Any]], language: str) -> str:
                     )
                 )
                 for row in rows
-            }
+            },
+            {"항목" if language == "ko" else "Item": evidence}
+            | {str(row.get("ticker", "")): str(row.get("evidence_quality", "LOW")) for row in rows},
         ]
     )
 
@@ -158,30 +199,16 @@ def risk_summary(row: dict[str, Any], language: str) -> str:
     return ", ".join(risk_label(str(item.get("id", "risk")), language) for item in triggered[:3])
 
 
-def risk_label(value: str, language: str) -> str:
-    labels = {
-        "debt_risk": "부채 위험",
-        "liquidity_risk": "유동성 위험",
-        "negative_equity": "자본잠식 위험",
-        "earnings_deterioration": "이익 악화 위험",
-        "fcf_deterioration": "잉여현금흐름 악화 위험",
-        "margin_deterioration": "마진 악화 위험",
-        "valuation_risk": "가치평가 위험",
-        "share_dilution": "주식 희석 위험",
-    }
-    if language == "ko":
-        return labels.get(value, value.replace("_", " "))
-    return value.replace("_", " ")
-
-
-def comparison_basis_label(value: Any, language: str) -> str:
-    raw = str(value)
-    if raw == "unknown":
-        return "알 수 없음" if language == "ko" else raw
-    parts = [part for part in raw.split("|") if part]
-    if language != "ko":
-        return " + ".join(basis_label(part) for part in parts)
-    return " + ".join(korean_basis_label(basis_label(part)) for part in parts)
+def methodology_text(report: dict[str, Any], entries: list[dict[str, Any]], language: str) -> str:
+    changes = report.get("what_changed", [])
+    if not isinstance(changes, list) or not changes:
+        return methodology_table(entries, language)
+    label = "최근 변화" if language == "ko" else "What Changed"
+    lines = [methodology_table(entries, language), "", label]
+    lines.extend(
+        f"- {change_text(change, language)}" for change in changes if isinstance(change, dict)
+    )
+    return "\n".join(lines)
 
 
 def markdown_table(rows: list[dict[str, str]]) -> str:
@@ -204,6 +231,8 @@ def comparison_labels(language: str) -> dict[str, str]:
             "valuation": "가치평가",
             "risks": "주요 위험",
             "scenario": "상승 / 하락 시나리오",
+            "bull_case": "상승 시나리오",
+            "bear_case": "하락 시나리오",
             "scenario_body": "상승 가능성과 하락 위험은 별도로 검토해야 합니다.",
             "conclusion": "결론",
             "conclusion_body": (
@@ -225,6 +254,8 @@ def comparison_labels(language: str) -> dict[str, str]:
         "valuation": "Valuation",
         "risks": "Key Risks",
         "scenario": "Bull / Bear Case",
+        "bull_case": "Bull case",
+        "bear_case": "Bear case",
         "scenario_body": "Upside and downside scenarios should be evaluated separately.",
         "conclusion": "Conclusion",
         "conclusion_body": (

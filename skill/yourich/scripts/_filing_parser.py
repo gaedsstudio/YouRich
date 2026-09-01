@@ -73,7 +73,7 @@ def section_markers(text: str, form: str) -> list[tuple[int, str, str]]:
     )
     markers = []
     for name, (pattern, item) in patterns.items():
-        match = re.search(pattern, text, flags=re.IGNORECASE)
-        if match:
-            markers.append((match.start(), name, item))
+        matches = list(re.finditer(pattern, text, flags=re.IGNORECASE))
+        if matches:
+            markers.append((matches[-1].start(), name, item))
     return markers
