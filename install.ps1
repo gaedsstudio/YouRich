@@ -1,7 +1,10 @@
 $ErrorActionPreference = "Stop"
 
 $python = if ($env:PYTHON) { $env:PYTHON } else { "python" }
-& $python -c "import sys; raise SystemExit('YouRich requires Python 3.11 or newer.') if sys.version_info < (3, 11) else None"
+& $python -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 'YouRich requires Python 3.11 or newer.')"
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
 
 $installed = $false
 $skillSource = Join-Path $PWD "skill\yourich"
