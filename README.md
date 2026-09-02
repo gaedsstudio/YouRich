@@ -1,526 +1,348 @@
 English | [한국어](README_KO.md) | [日本語](README_JA.md) | [中文](README_ZH.md)
 
-# YouRich — Investment Research Framework for Claude Code and Codex
-
-> Structured research. Deterministic finance. Traceable evidence.
-
-**YouRich** is an open-source investment research skill for Claude Code and Codex. It gives coding agents a repeatable workflow for public-company research, deterministic financial calculations, valuation, financial-quality analysis, risk checks, and evidence verification.
-
-YouRich does not provide its own AI model and it is not a standalone stock app. Claude Code or Codex handles reasoning and qualitative research; YouRich supplies the financial discipline underneath.
-
-**Current milestone: v0.9.0 — Catalyst & Event Intelligence**
-
-v0.9.0 adds catalyst and event intelligence from primary sources, with material
-event timelines, thesis-impact mapping, upcoming official catalysts, and
-snapshot-aware event filtering while preserving thesis tracking, peer research,
-valuation intelligence, and official earnings evidence.
-
-[Why YouRich?](#why-not-just-ask-ai-directly) · [Architecture](#architecture) · [Capabilities](#capabilities) · [Quick Start](#quick-start) · [Research Layer](#v040-research-layer) · [Methodology](#methodology)
-
----
-
-## Why Not Just Ask AI Directly?
-
-You can ask an AI model whether a stock looks attractive. The problem is not whether it can produce an answer — it is whether the answer is financially consistent, reproducible, and traceable.
-
-### 1. Important Financial Math Is Deterministic
-
-YouRich runs important financial calculations in Python and uses `Decimal` where precision matters.
-
-```text
-Market data + SEC fundamentals
-            ↓
-    deterministic scripts
-            ↓
- valuation / quality / risk
-            ↓
-      Claude or Codex
-            ↓
-   final research note
-```
-
-The agent should use YouRich-derived values instead of mentally recalculating market cap, NCAV, Graham Number, margins, ratios, trends, or risk flags.
-
-### 2. Missing Data Stays Missing
-
-If YouRich cannot verify a value, it returns `null`, a warning, or an insufficient-data state.
-
-It does not turn missing data into zero, guess a market price, or silently fill gaps.
-
-```json
-{
-  "price": null,
-  "warnings": ["MARKET_PROVIDER_FAILED"]
-}
-```
-
-### 3. Every Important Metric Has Provenance
-
-YouRich records where values came from and how derived metrics were calculated.
-
-Typical metadata includes:
-
-- SEC concept
-- unit
-- fiscal year / fiscal period
-- filing form
-- filing date
-- accession number
-- period start / end
-- market provider
-- mapping confidence
-- restatement status
-- metric inputs
-
-This lets the host agent distinguish **reported facts**, **derived metrics**, and **qualitative interpretation**.
-
-### 4. Research Is Reproducible
-
-The same workflow is reused for company analysis, valuation, financial quality, risk, comparison, and thesis construction.
-
-### 5. It Lives Inside Claude Code and Codex
-
-Install it once, then ask your agent normally:
-
-```text
-Analyze NVIDIA using YouRich.
-Compare AMD and Intel as investments.
-Is Microsoft expensive?
-Check Tesla's financial risks.
-```
-
----
-
-## Architecture
-
-```text
-User
-  ↓
-Claude Code / Codex
-  ↓
-YouRich Skill
-  ↓
-Structured Research Workflow
-  ├─ Financial Data
-  ├─ Valuation
-  ├─ Financial Quality
-  ├─ Risk Checks
-  ├─ Filing Research
-  └─ Evidence Verification
-  ↓
-Deterministic Python Tools
-  ↓
-Agent Reasoning + Public Qualitative Research
-  ↓
-Final Investment Research
-```
-
-The same canonical skill is used across both environments.
-
-```text
-skill/yourich/
-├── SKILL.md
-├── scripts/
-├── references/
-└── assets/
-```
-
-`SKILL.md` is the source of truth.
-
----
-
-## Capabilities
-
-### Research Modes
-
-| Mode | Purpose |
-|---|---|
-| Full analysis | Business, financials, valuation, risks, bull case, bear case, conclusion |
-| Valuation | Price-sensitive valuation metrics |
-| Financials | Fetch and normalize company financial data |
-| Filings | Fetch SEC 10-K / 10-Q metadata and parse sections |
-| Business | Filing-backed business-model and quality review |
-| Management | Official-evidence management and capital-allocation review |
-| Risk | Financial quality, quantitative risk checks, and filing risk review |
-| Compare | Apply the same methodology to multiple tickers |
-| Thesis | Combine quantitative evidence with qualitative research |
-
-### Valuation Metrics
-
-When the required data exists:
-
-- Market Cap
-- TTM P/E
-- latest P/B
-- TTM P/S
-- TTM FCF Yield
-- TTM Earnings Yield
-- NCAV
-- NCAV per share
-- Price / NCAV
-- Graham Number
-- Margin of Safety
-- Normalized EPS
-
-### Financial Quality
-
-- revenue growth
-- earnings growth
-- gross / operating / net margins
-- FCF margin
-- ROE
-- ROA
-- ROIC
-- current ratio
-- quick ratio
-- debt / equity
-- debt / assets
-- earnings consistency
-- FCF consistency
-- share dilution
-
-### Risk Checks
-
-- weak liquidity
-- excessive debt
-- negative equity
-- earnings deterioration
-- FCF deterioration
-- margin deterioration
-- dilution
-- valuation risk
-
-Qualitative risks are handled by the host agent using filing or public evidence
-and kept separate from deterministic results.
-
----
-
-## v0.4.0 Research Layer
-
-v0.4 turns SEC filings into compact, source-linked research context for the
-host agent. YouRich is still not a standalone stock app or chatbot; it provides
-deterministic tools and evidence discipline inside Claude Code and Codex.
-
-New scripts:
-
-```bash
-cd skill/yourich
-python scripts/fetch_filings.py AAPL --form 10-K --form 10-Q --limit 2
-python scripts/research_context.py AAPL --mode thesis
-python scripts/filing_parser.py --input filing.html --form 10-K
-python scripts/evidence.py
-```
-
-The SEC provider uses EDGAR submissions metadata and primary archive documents.
-Set `YOURICH_SEC_USER_AGENT` to configure the SEC User-Agent. Filing metadata is
-cached for 24 hours and primary documents are cached for seven days under
-`YOURICH_CACHE_DIR`.
-
-Research context includes filings, parsed section inventory, selected evidence
-excerpts, claim statuses, business analysis, business quality, moat analysis,
-management and capital allocation, filing risk, risk-factor text change
-detection, MD&A cross-checks, evidence coverage, confidence, warnings, and a
-non-advisory conclusion.
-
----
-
-## v0.3.0 Financial Data Correctness
-
-v0.3 focuses on correctness of financial inputs rather than adding more surface features.
-
-### SEC Fact Selection
-
-SEC Company Facts are normalized using:
-
-```text
-concept
-unit
-FY / FP
-form
-filed date
-start / end
-frame
-accession number
-amendment status
-```
-
-Duplicate facts are resolved with filing recency and reporting context in mind. Restatements are detected on a best-effort basis.
-
-### Annual, Quarterly, TTM, and Snapshot Data
-
-Income-statement and cash-flow values are period-aware.
-
-```text
-Revenue
-Operating Income
-Net Income
-EPS
-Operating Cash Flow
-CapEx
-Free Cash Flow
-        ↓
-       TTM
-```
-
-Balance-sheet values use the latest appropriate snapshot.
-
-```text
-Cash
-Current Assets
-Current Liabilities
-Total Assets
-Total Liabilities
-Debt
-Equity
-Shares Outstanding
-        ↓
- latest balance-sheet snapshot
-```
-
-### Valuation Basis
-
-```text
-P/E       = Market Price / TTM Diluted EPS
-P/S       = Market Cap / TTM Revenue
-FCF Yield = TTM FCF / Market Cap
-P/B       = Market Cap / Latest Equity
-```
-
-If periods, currencies, or share data are not comparable, YouRich returns missing data or a warning instead of forcing a result.
-
-### Data Quality
-
-```json
-{
-  "data_quality": {
-    "market_data": "delayed",
-    "fundamentals": "current",
-    "ttm_coverage": "complete",
-    "mapping_confidence": "high",
-    "currency_match": true
-  }
-}
-```
-
----
-
-## Data Sources
-
-### Fundamentals
-
-YouRich uses **SEC Company Facts** for public-company fundamentals.
-
-### Market Price
-
-Default fallback chain:
-
-1. Yahoo chart endpoint — unofficial / delayed
-2. Stooq CSV endpoint — unofficial / delayed
-3. Alpha Vantage Global Quote — optional API-key provider
-
-```text
-YOURICH_MARKET_PROVIDER=alpha_vantage
-YOURICH_MARKET_API_KEY=...
-```
-
-Provider failures are returned as warnings. Prices are never fabricated.
-
-### Cache
-
-- market quotes: 15 minutes
-- SEC fundamentals: 24 hours
-
-```text
-YOURICH_CACHE_DIR=...
-```
-
----
+# YouRich
+
+**Investment research for Claude Code and Codex.**
+
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![Version](https://img.shields.io/badge/version-0.9.0-informational)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+SEC filings in. Structured financials, valuation, earnings, peer research,
+events, and traceable evidence out.
+
+YouRich is an open-source investment research skill that gives AI coding agents
+a reproducible financial research workflow.
+
+Claude Code or Codex handles reasoning and writing.
+
+YouRich handles the financial discipline underneath.
+
+<!--
+<p align="center">
+  <img src="assets/yourich-demo.gif" width="850" alt="YouRich terminal demo">
+</p>
+-->
+
+## Examples
+
+- [NVIDIA full investment research](examples/nvidia-full-analysis.md)
+- [Apple valuation intelligence](examples/apple-valuation.md)
+- [AMD vs NVIDIA comparison](examples/amd-vs-nvidia.md)
+- [Earnings analysis](examples/earnings-analysis.md)
+- [Thesis tracking](examples/thesis-tracking.md)
+
+## Why YouRich?
+
+AI can explain a business, summarize filings, and write a useful research note.
+The risk is that financial periods, derived metrics, missing data, and evidence
+quality can blur together.
+
+YouRich gives the host agent deterministic tools for the parts that should not
+depend on prose generation: SEC period handling, metric provenance, valuation
+math, quality checks, and evidence tracking.
+
+| Dimension | Raw AI answer | AI + YouRich |
+| --- | --- | --- |
+| Financial calculations | Model-generated | Deterministic Python |
+| SEC periods | Easy to mix | Period-aware |
+| TTM reconstruction | Often unclear | Explicit reconstruction |
+| Missing data | Easy to fill implicitly | Stays missing |
+| Metric provenance | Conversation-dependent | Preserved |
+| Earnings / guidance | Summary-oriented | Structured evidence |
+| Valuation | Narrative estimate | Reverse DCF + scenarios |
+| Peer analysis | Often broad | Basis-aware comparison |
+| Previous research | Conversation-dependent | Local research snapshots |
+| Events | Ad hoc summary | Primary-source event intelligence |
 
 ## Quick Start
 
-### Requirements
+Requirements:
 
 - Python 3.11+
 - Claude Code or OpenAI Codex
 - Git
-
-### 1. Clone
 
 ```bash
 git clone https://github.com/gaedsstudio/YouRich.git
 cd YouRich
 ```
 
-### 2. Install
-
 macOS / Linux:
 
 ```bash
+chmod +x install.sh
 ./install.sh
 ```
 
-Windows PowerShell:
+Windows:
 
 ```powershell
-./install.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-### 3. Claude Code
+After installation, use the skill from Claude Code or Codex:
 
 ```text
-Analyze NVIDIA using YouRich.
-Compare AMD and Intel.
-Value Microsoft.
-Check the financial risks of Tesla.
+$yourich Analyze NVIDIA as an investment.
 ```
-
-### 4. Codex
 
 ```text
-$yourich Analyze NVIDIA.
+$yourich Is Apple expensive at the current price?
 ```
-
-or:
 
 ```text
-Use YouRich to compare AAPL and MSFT as investments.
+$yourich Compare AMD and NVIDIA.
 ```
 
----
+Claude Code examples:
+
+```text
+Use YouRich to analyze NVIDIA as an investment.
+```
+
+```text
+Use YouRich to compare AMD, NVIDIA, and Broadcom.
+```
+
+```text
+Use YouRich to show what changed in NVIDIA since my previous analysis.
+```
+
+## What YouRich Can Do
+
+### Company Research
+
+Builds evidence-backed company research using SEC filings, normalized
+financials, risk checks, and plain-language report structure.
+
+### Financial Data Correctness
+
+Normalizes SEC Company Facts into selected financial fields with explicit basis,
+source, filing period, and quality metadata.
+
+### Valuation Intelligence
+
+Computes deterministic valuation metrics, reverse DCF context, scenario ranges,
+and valuation warnings without turning them into price targets.
+
+### Earnings & Guidance
+
+Uses official earnings materials and SEC 8-K evidence to separate reported
+results, guidance, management commentary, and thesis-change signals.
+
+### Industry & Peer Research
+
+Compares companies against explicit or conservatively discovered peers while
+preserving basis mismatches and comparability warnings.
+
+### Thesis Tracking
+
+Stores local research snapshots, compares current evidence with previous
+research, and produces compact change reports.
+
+### Catalyst & Event Intelligence
+
+Classifies primary-source events, deduplicates overlapping evidence, maps
+material events to thesis dimensions, and lists upcoming catalysts only when an
+official source confirms the date.
+
+## Example Research Flow
+
+```text
+User asks investment question
+        ↓
+YouRich fetches SEC financials and filing evidence
+        ↓
+Deterministic scripts compute valuation, quality, risk, peers, events
+        ↓
+Host agent interprets the evidence
+        ↓
+Structured report with provenance and warnings
+```
+
+## Example Output
+
+YouRich's report layer is designed for consumer-readable research:
+
+```text
+Overall Assessment
+At a Glance
+Investment Summary
+Key Metrics
+Business Quality
+Financial Quality
+Valuation
+Key Risks
+Bull Case
+Bear Case
+What Changed
+Conclusion
+Data Quality & Methodology
+```
+
+For representative structure without invented live values, see
+[examples/](examples/).
+
+## Evidence First
+
+Every important claim should follow:
+
+```text
+Claim -> Evidence -> Interpretation
+```
+
+Evidence states are explicit:
+
+```text
+SUPPORTED
+PARTIALLY_SUPPORTED
+CONTRADICTED
+INSUFFICIENT_EVIDENCE
+```
+
+Financial values are separated from interpretation:
+
+```text
+reported_fact
+derived_metric
+qualitative interpretation
+```
+
+## Missing Data Stays Missing
+
+If YouRich cannot verify a value, it returns `null`, a warning, or an
+insufficient-data state. It does not turn missing data into zero, guess a market
+price, or quietly fill unsupported fields.
+
+## Data Sources
+
+YouRich uses SEC Company Facts, SEC EDGAR submissions, SEC archive documents,
+official earnings materials, and optional delayed market quote providers. Market
+provider failures are reported as warnings, not hidden by guessed prices.
+
+Set `YOURICH_SEC_USER_AGENT` to configure the EDGAR User-Agent with your own
+requester identifier. Do not invent a fake contact address.
+
+## Data Quality
+
+SEC quarterly values are often reported as year-to-date figures. YouRich keeps
+the period math explicit:
+
+```text
+Q2 = 6M YTD - Q1
+Q3 = 9M YTD - 6M YTD
+Q4 = Annual - 9M YTD
+```
+
+This matters for TTM correctness. A last-twelve-month figure may require:
+
+```text
+Latest annual
++ current year-to-date
+- comparable prior year-to-date
+= reconstructed TTM
+```
+
+That reconstructed value is a derived metric, not a directly reported SEC fact.
+The report JSON preserves provenance so downstream agents can distinguish
+reported facts from YouRich-derived metrics.
 
 ## Internal Tools
 
+The skill includes deterministic scripts under
+[`skill/yourich/scripts/`](skill/yourich/scripts/):
+
 ```bash
-cd skill/yourich
-
 python scripts/fetch_financials.py AAPL
-python scripts/fetch_financials.py AAPL --debug
-python scripts/valuation.py --ticker AAPL
-python scripts/financial_health.py --ticker AAPL
-python scripts/risk.py --ticker AAPL
-python scripts/compare.py AAPL MSFT
+python scripts/valuation_intelligence.py NVDA --format markdown
+python scripts/earnings_context.py AAPL --format markdown
+python scripts/peer_research.py NVDA --format markdown
+python scripts/event_intelligence.py NVDA --format markdown
+python scripts/thesis_tracker.py NVDA compare --format markdown
+python scripts/report.py AAPL --language en
+python scripts/compare.py AAPL MSFT --format markdown
 ```
 
-All scripts emit structured JSON.
+Run scripts from the installed skill directory or from
+`skill/yourich/scripts/` during development.
 
----
-
-## Methodology
+## Project Structure
 
 ```text
-1. Identify company / ticker
-2. Gather financial data
-3. Gather SEC filing evidence when business, risk, management, or thesis work needs it
-4. Normalize periods and fields
-5. Check missing data and data quality
-6. Research business fundamentals when needed
-7. Run deterministic valuation
-8. Run financial-quality checks
-9. Run quantitative risk checks
-10. Verify important claims with evidence
-11. Build bull case
-12. Build bear case
-13. Produce investment thesis
+skill/yourich/              Skill instructions and deterministic scripts
+skill/yourich/references/   Research methodology references
+tests/                      Regression tests for financial correctness and reports
+examples/                   Public example report structures
+assets/                     Demo recording guidance and future demo media
+.github/                    Issue, pull request, and CI templates
+docs/                       Repository metadata and maintainer notes
 ```
 
-Priority:
+## Design Principles
 
-```text
-YouRich deterministic data
-        ↓
-YouRich evidence / provenance
-        ↓
-public qualitative research
-        ↓
-Claude Code / Codex interpretation
-```
+- Deterministic calculations over model arithmetic.
+- SEC period handling before valuation interpretation.
+- Missing data remains visible.
+- Provenance is preserved for important metrics.
+- Primary sources are preferred for filings, earnings, and events.
+- Reports should be readable without hiding methodology.
+- No direct buy/sell instructions.
 
-### Default Research Output
+## Current Milestone
 
-```text
-Company
-Ticker
+Current milestone: **v0.9.0 — Catalyst & Event Intelligence**.
 
-Investment Summary
+The next major focus is v1.0 stability, not broad new investment-analysis
+features.
 
-Business
-Business Quality
-Management / Capital Allocation
-Financial Quality
-Valuation
-Risks
+## Roadmap
 
-Bull Case
-Bear Case
+The v1.0 roadmap is intentionally stability-focused:
 
-Key Evidence
-Open Evidence Gaps
+- stable schemas
+- installation reliability
+- regression coverage
+- documentation
+- example reports
+- release packaging
+- CI
+- contributor workflow
 
-Conclusion
-```
+## What YouRich Is Not
 
-Preferred conclusion language:
+YouRich is not:
 
-- `ATTRACTIVE VALUATION`
-- `FAIRLY VALUED`
-- `EXPENSIVE`
-- `HIGH FINANCIAL RISK`
-- `INSUFFICIENT DATA`
-- `HIGH QUALITY / EXPENSIVE`
-- `LOW QUALITY / CHEAP`
+- a stock-picking product
+- a trading bot
+- a brokerage tool
+- a guarantee of returns
+- a buy/sell engine
+- a replacement for professional judgment
 
----
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Financial correctness bugs have higher
+priority than adding new metrics.
 
 ## Development
 
-```bash
-python -m pip install pytest ruff basedpyright
+Install development tools from the repository configuration, then run:
 
-python -m ruff format .
+```bash
 python -m ruff check .
 python -m basedpyright
 python -m pytest -q
 ```
 
-Current v0.4 baseline: **35 tests passing**.
-
----
-
-## Design Principles
-
-1. Do not fabricate financial data.
-2. Use deterministic tools for important calculations.
-3. Keep reported facts and derived metrics separate.
-4. Track periods, units, currencies, and sources.
-5. Expose uncertainty instead of hiding it.
-6. Keep YouRich agent-native rather than turning it into a standalone stock app.
-
----
-
-## Future Direction
-
-- deeper 10-K / 10-Q research workflows
-- richer qualitative evidence templates
-- improved multiple-share-class handling
-- broader financial-data mappings
-- stronger comparison and audit workflows
-
----
+Use `python -m ruff format .` before committing Python changes.
 
 ## Disclaimer
 
-YouRich is for educational and investment-research support purposes only.
-
-It does not provide personalized financial advice, guarantee returns, execute trades, or issue definitive buy/sell instructions. Market data can be delayed or unavailable. Always verify important information and make your own investment decisions.
-
----
+YouRich is a research tool. It is not financial advice and does not recommend
+when, whether, or how much to buy or sell. Verify important information against
+primary sources before making decisions.
 
 ## License
 
-MIT License
-
----
-
-If YouRich is useful to you, consider starring the repository.
-
-**Repository:** https://github.com/gaedsstudio/YouRich
+[MIT License](LICENSE)

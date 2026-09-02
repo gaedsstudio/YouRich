@@ -1,10 +1,12 @@
 [English](README_EN.md) | [한국어](README_KO.md) | 日本語 | [中文](README_ZH.md)
 
-# YouRich — Claude Code / Codex 向け投資リサーチフレームワーク
+# YouRich
 
-> 構造化されたリサーチ。決定論的な金融計算。追跡可能な根拠。
+**Claude Code と Codex のための投資リサーチ。**
 
-**YouRich** は Claude Code と Codex で利用するオープンソースの投資リサーチ Skill です。上場企業の調査に、再利用可能なリサーチ手順、正確な金融計算、バリュエーション、財務品質分析、リスクチェック、エビデンス検証を追加します。
+SEC filing を入力に、構造化された financials、valuation、earnings、peer research、events、追跡可能な evidence を出力します。
+
+**YouRich** は AI coding agent に再現可能な金融リサーチ workflow を追加するオープンソースの投資リサーチ Skill です。
 
 YouRich 自体は AI モデルを提供せず、単体の株式分析アプリでもありません。Claude Code または Codex が推論と定性的リサーチを担当し、YouRich はその下で金融計算と検証プロセスを担当します。
 

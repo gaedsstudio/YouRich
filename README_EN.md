@@ -1,10 +1,12 @@
 English | [한국어](README_KO.md) | [日本語](README_JA.md) | [中文](README_ZH.md)
 
-# YouRich — Investment Research Framework for Claude Code and Codex
+# YouRich
 
-> Structured research. Deterministic finance. Traceable evidence.
+**Investment research for Claude Code and Codex.**
 
-**YouRich** is an open-source investment research skill for Claude Code and Codex. It gives coding agents a repeatable workflow for public-company research, deterministic financial calculations, valuation, financial-quality analysis, risk checks, and evidence verification.
+SEC filings in. Structured financials, valuation, earnings, peer research, events, and traceable evidence out.
+
+**YouRich** is an open-source investment research skill that gives AI coding agents a reproducible financial research workflow.
 
 YouRich does not provide its own AI model and it is not a standalone stock app. Claude Code or Codex handles reasoning and qualitative research; YouRich supplies the financial discipline underneath.
 

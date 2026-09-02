@@ -1,0 +1,58 @@
+name: Financial data bug
+description: Report an incorrect financial value, basis, or provenance.
+title: "[Financial data]: "
+labels: ["financial-data", "bug"]
+body:
+  - type: input
+    id: ticker
+    attributes:
+      label: Ticker
+    validations:
+      required: true
+  - type: input
+    id: metric
+    attributes:
+      label: Metric
+    validations:
+      required: true
+  - type: input
+    id: expected_value
+    attributes:
+      label: Expected value
+    validations:
+      required: true
+  - type: input
+    id: yourich_output
+    attributes:
+      label: YouRich output
+    validations:
+      required: true
+  - type: input
+    id: basis_period
+    attributes:
+      label: Basis / period
+      description: Example: latest annual, Q2, 6M YTD, 9M YTD, or TTM.
+    validations:
+      required: true
+  - type: input
+    id: filing_source
+    attributes:
+      label: Filing/source
+      description: SEC filing, accession number, or official source URL.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction command
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: debug_json
+    attributes:
+      label: Debug JSON
+      description: Include debug output if available. Do not include credentials.
+      render: json
+    validations:
+      required: false
